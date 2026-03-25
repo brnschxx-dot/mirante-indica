@@ -16,7 +16,12 @@ export const metadata = {
   title: 'Mirante Indica 🏢',
   description: 'Indicações de serviços para moradores',
   icons: {
-    icon: '/icon.png', // Nome do arquivo que você colocou na pasta public
+    icon: [
+      {
+        url: '/logo-mirante.png?v=1', // O '?v=1' força o navegador a baixar o novo
+        href: '/logo-mirante.png?v=1',
+      },
+    ],
   },
 }
 
