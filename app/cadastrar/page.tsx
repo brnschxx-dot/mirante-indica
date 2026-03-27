@@ -16,7 +16,7 @@ export default function Cadastrar() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
         // Se não tiver sessão, manda para o login
-        router.push('/login')
+        router.replace('/login')
       }
     }
     checkUser()
@@ -42,30 +42,30 @@ export default function Cadastrar() {
     <div className="p-8 max-w-md mx-auto font-sans">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Nova Indicação</h1>
-        <Link href="/" className="text-blue-600 underline text-sm">Voltar</Link>
+        <Link href="/dashboard" className="text-blue-600 underline text-sm font-medium">Voltar ao Menu</Link>
       </div>
       
       <form onSubmit={salvar} className="flex flex-col gap-4">
         <input 
-          className="border p-2 rounded text-black w-full" 
-          placeholder="Nome do local (Ex: Pizzaria)" 
+          className="border border-gray-300 p-3 rounded-xl text-black w-full outline-blue-500" 
+          placeholder="Nome do local (Ex: Eletricista João)" 
           value={nome} 
           onChange={e => setNome(e.target.value)} 
           required 
         />
         <input 
-          className="border p-2 rounded text-black w-full" 
-          placeholder="WhatsApp" 
+          className="border border-gray-300 p-3 rounded-xl text-black w-full outline-blue-500" 
+          placeholder="WhatsApp (Ex: 11999999999)" 
           value={tel} 
           onChange={e => setTel(e.target.value)} 
         />
-        <button type="submit" className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 font-bold transition-colors">
+        <button type="submit" className="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 font-bold transition-colors mt-2">
           Enviar Indicação
         </button>
       </form>
       
       {status && (
-        <p className={`mt-4 text-center font-medium ${status.includes('Erro') ? 'text-red-600' : 'text-green-700'}`}>
+        <p className={`mt-6 p-3 rounded-lg text-center text-sm font-medium border ${status.includes('Erro') ? 'text-red-600 bg-red-50 border-red-100' : 'text-green-700 bg-green-50 border-green-100'}`}>
           {status}
         </p>
       )}

@@ -1,12 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { supabase } from './../lib/supabaseClient' 
+import { supabase } from '../lib/supabaseClient' 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 export default function Home() {
   const [prestadores, setPrestadores] = useState<any[]>([])
-  const [sessao, setSessao] = useState<any>(null)
   const [carregando, setCarregando] = useState(true)
   const router = useRouter()
 
@@ -17,10 +16,9 @@ export default function Home() {
       
       if (!session) {
         // Se NÃO estiver logado, manda direto para a tela de login
-        router.push('/login')
+        router.replace('/login')
       } else {
-        // Se ESTIVER logado, salva a sessão e busca os dados
-        setSessao(session)
+        // Se ESTIVER logado, busca os dados
         const { data } = await supabase.from('prestadores').select('*')
         if (data) setPrestadores(data)
         setCarregando(false)
@@ -30,28 +28,23 @@ export default function Home() {
     checarAcesso()
   }, [router])
 
-  const handleSair = async () => {
-    await supabase.auth.signOut()
-    router.push('/login') // Após sair, volta para o login
-  }
-
-  // Enquanto verifica a sessão, mostra uma tela branca ou um aviso simples
+  // Enquanto verifica a sessão, mostra um aviso simples
   if (carregando) {
-    return <div className="flex justify-center items-center min-h-screen">Carregando Mirante Indica...</div>
+    return <div className="flex justify-center items-center min-h-screen text-gray-600 font-medium">Carregando indicações...</div>
   }
 
   return (
     <div className="p-8 max-w-2xl mx-auto font-sans bg-gray-50 min-h-screen">
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 border-b pb-6 gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 border-b border-gray-200 pb-6 gap-4">
         <h1 className="text-3xl font-bold text-blue-900">Mirante Indica 🏢</h1>
         
         <div className="flex gap-3">
+          <Link href="/dashboard" className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold text-sm hover:bg-gray-300 transition-all shadow-sm">
+            Menu
+          </Link>
           <Link href="/cadastrar" className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-green-700 transition-all shadow-sm">
             + Nova Indicação
           </Link>
-          <button onClick={handleSair} className="text-red-600 border border-red-200 bg-white px-4 py-2 rounded-lg text-sm hover:bg-red-50 transition-all">
-            Sair
-          </button>
         </div>
       </div>
 
@@ -73,7 +66,7 @@ export default function Home() {
               href={`https://wa.me/55${p.telefone?.replace(/\D/g, '')}`} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="bg-green-100 text-green-700 p-3 rounded-full hover:bg-green-200 transition-all"
+              className="bg-green-100 text-green-700 p-3 rounded-full hover:bg-green-200 transition-all flex items-center justify-center w-12 h-12"
             >
               📱
             </a>
