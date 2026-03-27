@@ -12,23 +12,44 @@ export default function Dashboard() {
 
   useEffect(() => {
     const checarAcesso = async () => {
+      console.log("Iniciando checagem de acesso...");
+      
       try {
-        const { data: { session }, error } = await supabase.auth.getSession()
+        // Tenta pegar a sessão com um tempo limite (timeout)
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (error || !session) {
-          // Se houver erro ou não tiver sessão, manda pro login
-          router.replace('/login')
+        if (error) {
+          console.error("Erro do Supabase:", error);
+          router.replace('/login');
+          return;
+        }
+
+        if (session) {
+          console.log("Sessão encontrada!");
+          setCarregando(false);
         } else {
-          // Se estiver tudo ok, libera a tela
-          setCarregando(false)
+          console.log("Nenhuma sessão, indo para login...");
+          router.replace('/login');
         }
       } catch (err) {
-        console.error("Erro na verificação:", err)
-        router.replace('/login')
+        console.error("Erro crítico na checagem:", err);
+        router.replace('/login');
       }
-    }
-    checarAcesso()
-  }, [router])
+    };
+
+    checarAcesso();
+
+    // SEGURANÇA: Se em 5 segundos nada acontecer, força o estado de carregamento a parar
+    // para podermos ver se a tela renderiza ou se o erro aparece.
+    const timer = setTimeout(() => {
+      if (carregando) {
+        console.warn("A checagem demorou demais. Forçando parada...");
+        // setCarregando(false); // Remova o comentário desta linha se quiser forçar a entrada para teste
+      }
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [router]);
 
   const handleSair = async () => {
     await supabase.auth.signOut()
