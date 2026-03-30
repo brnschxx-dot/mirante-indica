@@ -1,98 +1,103 @@
 'use client'
 import { useState } from 'react'
-import { supabase } from '../../lib/supabaseClient'
+import Image from 'next/image' 
+import { supabase } from '../../lib/supabaseClient' 
 import { useRouter } from 'next/navigation'
+import { LogIn, UserPlus } from 'lucide-react'
 
-export default function AuthPage() {
+export default function Login() {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
+  const [senha, setSenha] = useState('')
+  const [mensagem, setMensagem] = useState('')
+  const [carregando, setCarregando] = useState(false)
   const router = useRouter()
 
-  // Função para Login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setMessage('')
+    setCarregando(true)
+    setMensagem('Verificando credenciais...')
     
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password: senha,
+    })
+
     if (error) {
-      setMessage('❌ Erro: ' + error.message)
-      setLoading(false)
+      setMensagem('❌ E-mail ou senha incorretos.')
+      setCarregando(false)
     } else {
-      router.push('/dashboard')
+      setMensagem('✅ Sucesso! Redirecionando...')
+      router.replace('/dashboard') 
     }
   }
 
-  // Função para Cadastro (Nova Função)
+  // Nova função para cadastrar morador
   const handleSignUp = async () => {
-    setLoading(true)
-    setMessage('')
+    if (!email || !senha) {
+      setMensagem('⚠️ Preencha e-mail e senha para cadastrar.')
+      return
+    }
     
-    const { error } = await supabase.auth.signUp({ 
-      email, 
-      password,
+    setCarregando(true)
+    setMensagem('Criando conta...')
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password: senha,
       options: {
         emailRedirectTo: `${window.location.origin}/dashboard`,
       }
     })
-    
+
     if (error) {
-      setMessage('❌ Erro no cadastro: ' + error.message)
+      setMensagem('❌ Erro no cadastro: ' + error.message)
     } else {
-      setMessage('✅ Verifique seu e-mail para confirmar o cadastro!')
+      setMensagem('✅ Verifique seu e-mail para confirmar o cadastro!')
     }
-    setLoading(false)
+    setCarregando(false)
   }
 
   return (
-    <div className="p-8 max-w-md mx-auto text-black font-sans">
-      <h1 className="text-2xl font-bold mb-6 text-center">Mirante Indica</h1>
-      
-      <form onSubmit={handleLogin} className="flex flex-col gap-4">
-        <input 
-          type="email" 
-          placeholder="E-mail" 
-          className="border p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input 
-          type="password" 
-          placeholder="Senha" 
-          className="border p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+    <div className="p-8 max-w-md mx-auto font-sans flex flex-col min-h-screen justify-center bg-gray-50 text-black">
+      <div className="flex flex-col items-center mb-8 text-center">
+        <div className="bg-white p-4 rounded-full shadow-md mb-4 border border-gray-100">
+          <Image src="/logo-mirante.png" alt="Logo" width={80} height={80} priority />
+        </div>
+        <h1 className="text-3xl font-bold text-blue-900">Mirante Indica</h1>
+        <p className="text-gray-500 text-sm">Acesso exclusivo para moradores</p>
+      </div>
 
+      <form onSubmit={handleLogin} className="flex flex-col gap-4 bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+        <input 
+          type="email" placeholder="Seu e-mail" 
+          className="border border-gray-200 p-3 rounded-xl outline-blue-500"
+          value={email} onChange={e => setEmail(e.target.value)} required 
+        />
+        <input 
+          type="password" placeholder="Sua senha" 
+          className="border border-gray-200 p-3 rounded-xl outline-blue-500"
+          value={senha} onChange={e => setSenha(e.target.value)} required 
+        />
+        
         <button 
           type="submit" 
-          disabled={loading}
-          className="bg-blue-600 text-white p-3 rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50"
+          disabled={carregando}
+          className="flex items-center justify-center gap-2 bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 font-bold transition-all disabled:opacity-50"
         >
-          {loading ? 'Carregando...' : 'Entrar'}
+          <LogIn size={20} /> Entrar
         </button>
 
-        {/* Alternativa de Cadastro */}
         <button 
           type="button"
           onClick={handleSignUp}
-          disabled={loading}
-          className="text-blue-600 font-bold text-sm hover:underline"
+          disabled={carregando}
+          className="flex items-center justify-center gap-2 border border-blue-600 text-blue-600 p-3 rounded-xl hover:bg-blue-50 font-bold transition-all disabled:opacity-50"
         >
-          Não tem conta? Cadastre-se aqui
+          <UserPlus size={20} /> Cadastrar Novo Morador
         </button>
       </form>
-
-      {message && (
-        <div className="mt-4 p-3 bg-gray-100 rounded-lg text-center text-sm font-medium">
-          {message}
-        </div>
-      )}
+      
+      {mensagem && <p className="mt-4 text-center text-sm font-semibold text-gray-700">{mensagem}</p>}
     </div>
   )
 }
