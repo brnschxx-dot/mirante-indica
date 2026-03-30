@@ -9,12 +9,17 @@ export default function Cadastrar() {
   const [tel, setTel] = useState('')
   const [categoria, setCategoria] = useState('')
   const [status, setStatus] = useState('')
+  const [userEmail, setUserEmail] = useState('')
   const router = useRouter()
 
   useEffect(() => {
     const check = async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) router.replace('/login')
+      if (!session) {
+        router.replace('/login')
+      } else {
+        setUserEmail(session.user.email || '')
+      }
     }
     check()
   }, [router])
@@ -29,11 +34,12 @@ export default function Cadastrar() {
 
     setStatus('Salvando...')
 
-    // Retificação: Criamos o objeto explicitamente para evitar erros de mapeamento
+    // Capturamos os dados e incluímos o e-mail de quem está logado
     const dadosParaSalvar = {
       nome: nome.trim(),
       telefone: tel.trim(),
-      categoria: categoria
+      categoria: categoria,
+      indicado_por: userEmail // Vincula o morador à indicação
     }
 
     const { error } = await supabase
@@ -41,7 +47,6 @@ export default function Cadastrar() {
       .insert([dadosParaSalvar])
 
     if (error) { 
-      // Se o erro de "coluna não encontrada" persistir, o erro.message dirá o motivo exato
       setStatus('Erro: ' + error.message) 
     } else { 
       setStatus('✅ Indicação salva com sucesso!')
@@ -73,7 +78,6 @@ export default function Cadastrar() {
       </div>
 
       <form onSubmit={salvar} className="flex flex-col gap-5 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        
         <div className="flex flex-col gap-1">
           <label className="text-sm font-bold text-gray-700">Qual o tipo de serviço?</label>
           <select 
@@ -94,8 +98,8 @@ export default function Cadastrar() {
           <input 
             type="text"
             autoCapitalize="words"
-            className="border border-gray-300 p-3 rounded-xl outline-blue-500 placeholder-gray-400" 
-            placeholder="Ex: Eletricista João" 
+            className="border border-gray-300 p-3 rounded-xl outline-blue-500" 
+            placeholder="Ex: Pintor Automotivo" 
             value={nome} 
             onChange={e => setNome(e.target.value)} 
             required 
@@ -107,25 +111,21 @@ export default function Cadastrar() {
           <input 
             type="tel"
             inputMode="numeric"
-            pattern="[0-9]*"
-            className="border border-gray-300 p-3 rounded-xl outline-blue-500 placeholder-gray-400" 
-            placeholder="Ex: 11999999999" 
+            className="border border-gray-300 p-3 rounded-xl outline-blue-500" 
+            placeholder="11999999999" 
             value={tel} 
             onChange={e => setTel(e.target.value)} 
             required 
           />
         </div>
 
-        <button 
-          type="submit" 
-          className="bg-green-600 text-white p-4 rounded-xl font-bold text-lg mt-2 shadow-md hover:bg-green-700 transition-colors active:scale-95"
-        >
+        <button type="submit" className="bg-green-600 text-white p-4 rounded-xl font-bold text-lg mt-2 shadow-md active:scale-95">
           Salvar Indicação
         </button>
       </form>
 
       {status && (
-        <div className={`mt-6 p-4 rounded-xl text-center font-bold border ${status.includes('Erro') || status.includes('⚠️') ? 'text-red-700 bg-red-50 border-red-200' : 'text-green-800 bg-green-50 border-green-200'}`}>
+        <div className={`mt-6 p-4 rounded-xl text-center font-bold border ${status.includes('Erro') ? 'text-red-700 bg-red-50 border-red-200' : 'text-green-800 bg-green-50 border-green-200'}`}>
           {status}
         </div>
       )}
