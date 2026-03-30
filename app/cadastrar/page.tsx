@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ArrowLeft, Save } from 'lucide-react'
 
 export default function Cadastrar() {
   const [nome, setNome] = useState('')
@@ -13,7 +14,7 @@ export default function Cadastrar() {
   const router = useRouter()
 
   useEffect(() => {
-    const check = async () => {
+    const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
         router.replace('/login')
@@ -21,111 +22,97 @@ export default function Cadastrar() {
         setUserEmail(session.user.email || '')
       }
     }
-    check()
+    checkUser()
   }, [router])
 
-  const salvar = async (e: React.FormEvent) => {
+  const salvarIndicao = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!categoria) return setStatus('⚠️ Selecione uma categoria')
     
-    if (!categoria) {
-      setStatus('⚠️ Por favor, escolha uma categoria.')
-      return
-    }
+    setStatus('Enviando...')
 
-    setStatus('Salvando...')
-
-    // Capturamos os dados e incluímos o e-mail de quem está logado
-    const dadosParaSalvar = {
+    const { error } = await supabase.from('prestadores').insert([{
       nome: nome.trim(),
-      telefone: tel.trim(),
-      categoria: categoria,
-      indicado_por: userEmail // Vincula o morador à indicação
-    }
+      telefone: tel.replace(/\D/g, ''), // Salva apenas números
+      categoria,
+      indicado_por: userEmail
+    }])
 
-    const { error } = await supabase
-      .from('prestadores')
-      .insert([dadosParaSalvar])
-
-    if (error) { 
-      setStatus('Erro: ' + error.message) 
-    } else { 
-      setStatus('✅ Indicação salva com sucesso!')
-      setNome('')
-      setTel('')
-      setCategoria('')
-      setTimeout(() => setStatus(''), 3000)
+    if (error) {
+      setStatus('❌ Erro ao salvar: ' + error.message)
+    } else {
+      setStatus('✅ Indicação salva!')
+      // Pequeno delay para o usuário ver o sucesso antes de voltar
+      setTimeout(() => router.push('/'), 1500)
     }
   }
 
-  const listaCategorias = [
-    "🛠️ Construção e Reforma (Pintor, Pedreiro)",
-    "⚡ Manutenção (Eletricista, Encanador)",
-    "🧹 Limpeza e Diarista",
-    "🚚 Fretes e Mudanças",
-    "💻 TI e Eletrônicos",
-    "🍕 Alimentação",
-    "✨ Estética e Saúde",
-    "📦 Outros"
+  const categorias = [
+    "🛠️ Construção e Reforma", "⚡ Elétrica / Hidráulica", 
+    "🧹 Limpeza", "🍕 Alimentação", "🚚 Mudanças", 
+    "💻 Tecnologia", "✨ Estética", "📦 Outros"
   ]
 
   return (
-    <div className="p-6 max-w-md mx-auto min-h-screen text-black bg-gray-50 pb-20">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-extrabold text-blue-900">Nova Indicação</h1>
-        <Link href="/dashboard" className="text-blue-600 font-bold bg-blue-100 px-4 py-2 rounded-full text-sm">
-          Voltar
+    <div className="p-6 max-w-md mx-auto bg-gray-50 min-h-screen text-black">
+      {/* Header de Navegação */}
+      <div className="flex items-center gap-4 mb-8">
+        <Link href="/" className="p-2 bg-white rounded-full shadow-sm">
+          <ArrowLeft size={24} className="text-gray-600" />
         </Link>
+        <h1 className="text-2xl font-bold text-blue-900">Indicar Profissional</h1>
       </div>
 
-      <form onSubmit={salvar} className="flex flex-col gap-5 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-bold text-gray-700">Qual o tipo de serviço?</label>
+      <form onSubmit={salvarIndicao} className="space-y-5 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2">Categoria</label>
           <select 
-            className="border border-gray-300 p-3 rounded-xl outline-blue-500 bg-white text-gray-800"
+            className="w-full p-4 rounded-2xl border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
             value={categoria}
-            onChange={e => setCategoria(e.target.value)}
+            onChange={(e) => setCategoria(e.target.value)}
             required
           >
-            <option value="" disabled>Selecione uma categoria...</option>
-            {listaCategorias.map((cat, index) => (
-              <option key={index} value={cat}>{cat}</option>
-            ))}
+            <option value="">Selecione...</option>
+            {categorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
           </select>
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-bold text-gray-700">Nome do profissional ou local</label>
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2">Nome do Profissional</label>
           <input 
             type="text"
+            className="w-full p-4 rounded-2xl border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
+            placeholder="Ex: Pedro Pintor"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
             autoCapitalize="words"
-            className="border border-gray-300 p-3 rounded-xl outline-blue-500" 
-            placeholder="Ex: Pintor Automotivo" 
-            value={nome} 
-            onChange={e => setNome(e.target.value)} 
-            required 
+            required
           />
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-bold text-gray-700">WhatsApp (Apenas números)</label>
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2">WhatsApp</label>
           <input 
             type="tel"
             inputMode="numeric"
-            className="border border-gray-300 p-3 rounded-xl outline-blue-500" 
-            placeholder="11999999999" 
-            value={tel} 
-            onChange={e => setTel(e.target.value)} 
-            required 
+            className="w-full p-4 rounded-2xl border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
+            placeholder="11999999999"
+            value={tel}
+            onChange={(e) => setTel(e.target.value)}
+            required
           />
         </div>
 
-        <button type="submit" className="bg-green-600 text-white p-4 rounded-xl font-bold text-lg mt-2 shadow-md active:scale-95">
-          Salvar Indicação
+        <button 
+          type="submit"
+          className="w-full bg-blue-600 text-white p-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 active:scale-95 transition-all flex items-center justify-center gap-2"
+        >
+          <Save size={20} /> Salvar Indicação
         </button>
       </form>
 
       {status && (
-        <div className={`mt-6 p-4 rounded-xl text-center font-bold border ${status.includes('Erro') ? 'text-red-700 bg-red-50 border-red-200' : 'text-green-800 bg-green-50 border-green-200'}`}>
+        <div className="mt-6 p-4 rounded-2xl text-center font-bold bg-white border border-gray-100 shadow-sm animate-bounce">
           {status}
         </div>
       )}
