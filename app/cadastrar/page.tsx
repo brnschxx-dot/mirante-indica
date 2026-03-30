@@ -57,7 +57,7 @@ export default function Cadastrar() {
     <div className="p-6 max-w-md mx-auto bg-gray-50 min-h-screen text-black">
       {/* Header de Navegação */}
       <div className="flex items-center gap-4 mb-8">
-        <Link href="/" className="p-2 bg-white rounded-full shadow-sm">
+        <Link href="/Dashboard" className="p-2 bg-white rounded-full shadow-sm">
           <ArrowLeft size={24} className="text-gray-600" />
         </Link>
         <h1 className="text-2xl font-bold text-blue-900">Indicar Profissional</h1>
