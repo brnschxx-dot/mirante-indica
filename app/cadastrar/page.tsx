@@ -28,22 +28,30 @@ export default function Cadastrar() {
     }
 
     setStatus('Salvando...')
-    // Agora enviamos a categoria junto para o Supabase
-    const { error } = await supabase.from('prestadores').insert([{ nome, telefone: tel, categoria }])
-    
+
+    // Retificação: Criamos o objeto explicitamente para evitar erros de mapeamento
+    const dadosParaSalvar = {
+      nome: nome.trim(),
+      telefone: tel.trim(),
+      categoria: categoria
+    }
+
+    const { error } = await supabase
+      .from('prestadores')
+      .insert([dadosParaSalvar])
+
     if (error) { 
+      // Se o erro de "coluna não encontrada" persistir, o erro.message dirá o motivo exato
       setStatus('Erro: ' + error.message) 
     } else { 
       setStatus('✅ Indicação salva com sucesso!')
       setNome('')
       setTel('')
       setCategoria('')
-      // Limpa a mensagem de sucesso após 3 segundos
       setTimeout(() => setStatus(''), 3000)
     }
   }
 
-  // Lista de categorias para o select
   const listaCategorias = [
     "🛠️ Construção e Reforma (Pintor, Pedreiro)",
     "⚡ Manutenção (Eletricista, Encanador)",
@@ -66,7 +74,6 @@ export default function Cadastrar() {
 
       <form onSubmit={salvar} className="flex flex-col gap-5 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         
-        {/* CATEGORIA - Novo campo de seleção */}
         <div className="flex flex-col gap-1">
           <label className="text-sm font-bold text-gray-700">Qual o tipo de serviço?</label>
           <select 
@@ -82,7 +89,6 @@ export default function Cadastrar() {
           </select>
         </div>
 
-        {/* NOME - Teclado normal, começando com maiúscula */}
         <div className="flex flex-col gap-1">
           <label className="text-sm font-bold text-gray-700">Nome do profissional ou local</label>
           <input 
@@ -96,7 +102,6 @@ export default function Cadastrar() {
           />
         </div>
 
-        {/* TELEFONE - Força o teclado numérico no celular */}
         <div className="flex flex-col gap-1">
           <label className="text-sm font-bold text-gray-700">WhatsApp (Apenas números)</label>
           <input 
