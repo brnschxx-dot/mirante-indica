@@ -31,30 +31,9 @@ export default function Login() {
     }
   }
 
-  // Nova função para cadastrar morador
-  const handleSignUp = async () => {
-    if (!email || !senha) {
-      setMensagem('⚠️ Preencha e-mail e senha para cadastrar.')
-      return
-    }
-    
-    setCarregando(true)
-    setMensagem('Criando conta...')
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password: senha,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-      }
-    })
-
-    if (error) {
-      setMensagem('❌ Erro no cadastro: ' + error.message)
-    } else {
-      setMensagem('✅ Verifique seu e-mail para confirmar o cadastro!')
-    }
-    setCarregando(false)
+  // Função retificada: agora apenas redireciona para a tela de registro
+  const handleSignUp = () => {
+    router.push('/registro')
   }
 
   return (
@@ -90,8 +69,7 @@ export default function Login() {
         <button 
           type="button"
           onClick={handleSignUp}
-          disabled={carregando}
-          className="flex items-center justify-center gap-2 border border-blue-600 text-blue-600 p-3 rounded-xl hover:bg-blue-50 font-bold transition-all disabled:opacity-50"
+          className="flex items-center justify-center gap-2 border border-blue-600 text-blue-600 p-3 rounded-xl hover:bg-blue-50 font-bold transition-all"
         >
           <UserPlus size={20} /> Cadastrar Novo Morador
         </button>
