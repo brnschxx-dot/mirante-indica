@@ -47,6 +47,7 @@ export default function Dashboard() {
       <button onClick={() => { supabase.auth.signOut(); router.push('/login'); }} className="mt-16 flex items-center gap-2 text-red-500 font-semibold">
         <LogOut size={20} /> Sair do Sistema
       </button>
+      <BottomNav />
     </div>
   )
 }
