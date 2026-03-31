@@ -4,15 +4,15 @@ import { supabase } from '../../../lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Phone } from 'lucide-react'
 
-// Dicionário para converter o ID da URL na String exata do Banco de Dados
+// Dicionário CORRIGIDO para bater exatamente com as opções da tela de Cadastro
 const mapaCategorias: Record<string, string> = {
-  'construcao': '🛠️ Construção e Reforma (Pintor, Pedreiro)',
-  'manutencao': '⚡ Manutenção (Eletricista, Encanador)',
-  'limpeza': '🧹 Limpeza e Diarista',
-  'fretes': '🚚 Fretes e Mudanças',
-  'ti': '💻 TI e Eletrônicos',
+  'construcao': '🛠️ Construção e Reforma',
+  'manutencao': '⚡ Elétrica / Hidráulica',
+  'limpeza': '🧹 Limpeza',
+  'fretes': '🚚 Mudanças',
+  'ti': '💻 Tecnologia',
   'alimentacao': '🍕 Alimentação',
-  'estetica': '✨ Estética e Saúde',
+  'estetica': '✨ Estética',
   'outros': '📦 Outros'
 }
 
@@ -21,17 +21,22 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
   const router = useRouter()
   
   const nomeExatoNoBanco = mapaCategorias[params.id] || 'Categoria'
-  const nomeCurtoParaTitulo = nomeExatoNoBanco.split(' (')[0] // Corta parênteses para o título
+  // Remove o emoji da frente apenas para o título da página ficar mais limpo
+  const nomeCurtoParaTitulo = nomeExatoNoBanco.substring(3).trim()
 
   useEffect(() => {
     const buscarPrestadores = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('prestadores')
         .select('*')
         .eq('categoria', nomeExatoNoBanco)
         .order('id', { ascending: false })
       
-      if (data) setPrestadores(data)
+      if (error) {
+        console.error("Erro ao buscar:", error)
+      } else if (data) {
+        setPrestadores(data)
+      }
     }
     buscarPrestadores()
   }, [nomeExatoNoBanco])
