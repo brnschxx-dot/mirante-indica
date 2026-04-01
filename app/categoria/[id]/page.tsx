@@ -4,7 +4,6 @@ import { supabase } from '../../../lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Phone, Star, User } from 'lucide-react'
 
-// Mapeamento exato entre a URL e o Nome no Banco de Dados
 const mapaCategorias: Record<string, string> = {
   'construcao': 'Construção',
   'manutencao': 'Manutenção',
@@ -21,31 +20,34 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   
-  // Define o nome exato da categoria para o filtro
   const nomeCategoriaNoBanco = mapaCategorias[params.id]
-
-  const formatarNome = (nomeCompleto: string) => {
-    if (!nomeCompleto) return 'Morador';
-    const partes = nomeCompleto.trim().split(' ');
-    return partes.length > 1 ? `${partes[0]} ${partes[partes.length - 1]}` : partes[0];
-  }
 
   useEffect(() => {
     async function buscar() {
       if (!nomeCategoriaNoBanco) {
+        console.error("ID da URL não mapeado:", params.id)
         setLoading(false)
         return
       }
+
+      console.log("Buscando no banco por categoria igual a:", nomeCategoriaNoBanco)
 
       setLoading(true)
       const { data, error } = await supabase
         .from('prestadores')
         .select('*')
-        .eq('categoria', nomeCategoriaNoBanco) // Busca EXATA
+        .eq('categoria', nomeCategoriaNoBanco)
         .order('id', { ascending: false })
       
-      if (data) setPrestadores(data)
-      if (error) console.error("Erro Supabase:", error.message)
+      if (error) {
+        console.error("Erro na consulta do Supabase:", error.message)
+      }
+
+      if (data) {
+        console.log("Resultados encontrados:", data.length)
+        setPrestadores(data)
+      }
+      
       setLoading(false)
     }
     buscar()
@@ -62,7 +64,7 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
 
       <div className="p-4 max-w-md mx-auto grid gap-4">
         {loading ? (
-          <div className="text-center py-10 text-gray-400 animate-pulse">Filtrando lista...</div>
+          <div className="text-center py-10 text-gray-400">Carregando...</div>
         ) : prestadores.length > 0 ? (
           prestadores.map((p) => (
             <div key={p.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
@@ -76,31 +78,22 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
                   </div>
                   <p className="text-gray-600 text-sm font-semibold">{p.telefone}</p>
                 </div>
-                <a href={`https://wa.me/55${p.telefone?.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="bg-green-500 text-white p-3 rounded-full shadow-md active:scale-90 transition-all">
+                <a href={`https://wa.me/55${p.telefone?.replace(/\D/g, '')}`} target="_blank" className="bg-green-500 text-white p-3 rounded-full shadow-md">
                   <Phone size={18} fill="currentColor" />
                 </a>
               </div>
-
-              {p.comentario && (
-                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 italic text-xs text-gray-700">
-                  "{p.comentario}"
-                </div>
-              )}
-
+              
+              {p.comentario && <div className="bg-gray-50 p-3 rounded-xl italic text-xs text-gray-700">"{p.comentario}"</div>}
+              
               <div className="flex justify-between items-center pt-3 border-t border-gray-50 text-[10px] uppercase font-bold text-gray-400">
-                <span>Por: {formatarNome(p.indicado_por)}</span>
-                {p.instagram && (
-                  <div className="flex items-center gap-1 text-blue-600 lowercase font-bold">
-                    <User size={10} /> {p.instagram.replace('@', '')}
-                  </div>
-                )}
+                <span>Por: {p.indicado_por}</span>
+                {p.instagram && <div className="flex items-center gap-1 text-blue-600 lowercase font-bold"><User size={10} /> {p.instagram.replace('@', '')}</div>}
               </div>
             </div>
           ))
         ) : (
-          <div className="text-center mt-20 text-gray-400">
-            <p className="text-4xl mb-4">📭</p>
-            <p className="font-medium uppercase text-xs tracking-widest text-gray-400">Nenhuma indicação em {nomeCategoriaNoBanco}</p>
+          <div className="text-center mt-20 text-gray-400 uppercase text-xs tracking-widest">
+            Nenhuma indicação encontrada em {nomeCategoriaNoBanco}
           </div>
         )}
       </div>
