@@ -5,15 +5,15 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Phone, Star } from 'lucide-react'
 
 // Dicionário definitivo: Define a palavra-chave de busca no banco e o Título limpo
-const configCategoria: Record<string, { palavraChave: string, titulo: string }> = {
-  'construcao': { palavraChave: '%Constru%', titulo: 'Construção e Reforma' },
-  'manutencao': { palavraChave: '%Manuten%', titulo: 'Manutenção e Elétrica' }, 
-  'limpeza': { palavraChave: '%Limpez%', titulo: 'Limpeza e Diaristas' },
-  'fretes': { palavraChave: '%Frete%', titulo: 'Fretes e Mudanças' },
-  'ti': { palavraChave: '%Tecnolo%', titulo: 'Tecnologia' },
-  'alimentacao': { palavraChave: '%Alimenta%', titulo: 'Alimentação' },
-  'estetica': { palavraChave: '%Estética%', titulo: 'Estética' },
-  'outros': { palavraChave: '%Outros%', titulo: 'Outros' }
+const configCategoria: Record<string, { titulo: string }> = {
+  'construcao': { titulo: 'Construção e Reforma' },
+  'manutencao': { titulo: 'Manutenção e Elétrica' }, 
+  'limpeza': { titulo: 'Limpeza e Diaristas' },
+  'fretes': { titulo: 'Fretes e Mudanças' },
+  'ti': { titulo: 'Tecnologia' },
+  'alimentacao': { titulo: 'Alimentação' },
+  'estetica': { titulo: 'Estética' },
+  'outros': { titulo: 'Outros' }
 }
 
 export default function CategoriaLista({ params }: { params: { id: string } }) {
