@@ -4,16 +4,16 @@ import { supabase } from '../../../lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Phone, Star, User } from 'lucide-react'
 
-// Este mapa garante que 'limpeza' na URL busque exatamente 'Limpeza' no banco
-const mapaCategorias: Record<string, { dbName: string }> = {
-  'construcao': { dbName: 'Construção' },
-  'manutencao': { dbName: 'Manutenção' },
-  'limpeza': { dbName: 'Limpeza' },
-  'fretes': { dbName: 'Fretes' },
-  'ti': { dbName: 'Tecnologia' },
-  'alimentacao': { dbName: 'Alimentação' },
-  'estetica': { dbName: 'Estética' },
-  'outros': { dbName: 'Outros' }
+// Mapeamento exato entre a URL e o Nome no Banco de Dados
+const mapaCategorias: Record<string, string> = {
+  'construcao': 'Construção',
+  'manutencao': 'Manutenção',
+  'limpeza': 'Limpeza',
+  'fretes': 'Fretes',
+  'ti': 'Tecnologia',
+  'alimentacao': 'Alimentação',
+  'estetica': 'Estética',
+  'outros': 'Outros'
 }
 
 export default function CategoriaLista({ params }: { params: { id: string } }) {
@@ -21,20 +21,18 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   
-  // Obtém a configuração baseada no ID da URL
-  const config = mapaCategorias[params.id]
+  // Define o nome exato da categoria para o filtro
+  const nomeCategoriaNoBanco = mapaCategorias[params.id]
 
   const formatarNome = (nomeCompleto: string) => {
     if (!nomeCompleto) return 'Morador';
     const partes = nomeCompleto.trim().split(' ');
-    if (partes.length === 1) return partes[0];
-    return `${partes[0]} ${partes[partes.length - 1]}`;
+    return partes.length > 1 ? `${partes[0]} ${partes[partes.length - 1]}` : partes[0];
   }
 
   useEffect(() => {
-    const buscarPrestadores = async () => {
-      // Se a categoria não existir no mapa, interrompe a busca
-      if (!config) {
+    async function buscar() {
+      if (!nomeCategoriaNoBanco) {
         setLoading(false)
         return
       }
@@ -43,37 +41,28 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
       const { data, error } = await supabase
         .from('prestadores')
         .select('*')
-        // O filtro .eq garante a exclusividade: categoria deve ser IGUAL ao dbName
-        .eq('categoria', config.dbName) 
+        .eq('categoria', nomeCategoriaNoBanco) // Busca EXATA
         .order('id', { ascending: false })
       
       if (data) setPrestadores(data)
-      if (error) console.error("Erro ao filtrar categoria:", error.message)
+      if (error) console.error("Erro Supabase:", error.message)
       setLoading(false)
     }
-
-    buscarPrestadores()
-  }, [params.id, config])
+    buscar()
+  }, [params.id, nomeCategoriaNoBanco])
 
   return (
     <div className="min-h-screen bg-gray-50 text-black pb-24">
-      <div className="bg-white p-6 shadow-sm mb-6 flex items-center gap-4 sticky top-0 z-10 border-b">
-        <button 
-          onClick={() => router.back()} 
-          className="p-2 bg-gray-100 rounded-full text-blue-600 active:scale-90 transition-all"
-        >
+      <div className="bg-white p-6 shadow-sm mb-6 flex items-center gap-4 sticky top-0 z-10 border-b border-gray-100">
+        <button onClick={() => router.back()} className="p-2 bg-gray-100 rounded-full text-blue-600 active:scale-90 transition-all">
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-xl font-bold text-blue-900">
-          {config ? config.dbName : 'Indicações'}
-        </h1>
+        <h1 className="text-xl font-bold text-blue-900">{nomeCategoriaNoBanco || 'Categoria'}</h1>
       </div>
 
       <div className="p-4 max-w-md mx-auto grid gap-4">
         {loading ? (
-          <div className="text-center py-10 text-gray-400 animate-pulse font-medium">
-            Carregando lista de {config?.dbName}...
-          </div>
+          <div className="text-center py-10 text-gray-400 animate-pulse">Filtrando lista...</div>
         ) : prestadores.length > 0 ? (
           prestadores.map((p) => (
             <div key={p.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
@@ -81,22 +70,13 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
                 <div>
                   <h3 className="font-bold text-lg text-gray-900 leading-tight">{p.nome}</h3>
                   <div className="flex gap-0.5 my-1">
-                    {[1, 2, 3, 4, 5].map((estrela) => (
-                      <Star 
-                        key={estrela} 
-                        size={14} 
-                        className={p.avaliacao >= estrela ? "fill-yellow-400 text-yellow-400" : "text-gray-200"} 
-                      />
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star key={s} size={14} className={p.avaliacao >= s ? "fill-yellow-400 text-yellow-400" : "text-gray-200"} />
                     ))}
                   </div>
-                  <p className="text-gray-600 text-sm font-medium">{p.telefone}</p>
+                  <p className="text-gray-600 text-sm font-semibold">{p.telefone}</p>
                 </div>
-                <a 
-                  href={`https://wa.me/55${p.telefone?.replace(/\D/g, '')}`} 
-                  target="_blank" 
-                  rel="noreferrer" 
-                  className="bg-green-500 text-white p-3 rounded-full shadow-md active:scale-90 transition-all"
-                >
+                <a href={`https://wa.me/55${p.telefone?.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="bg-green-500 text-white p-3 rounded-full shadow-md active:scale-90 transition-all">
                   <Phone size={18} fill="currentColor" />
                 </a>
               </div>
@@ -107,20 +87,20 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
                 </div>
               )}
 
-              <div className="flex justify-between items-center pt-2 border-t border-gray-50 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                <span>Indicado por: {formatarNome(p.indicado_por)}</span>
+              <div className="flex justify-between items-center pt-3 border-t border-gray-50 text-[10px] uppercase font-bold text-gray-400">
+                <span>Por: {formatarNome(p.indicado_por)}</span>
                 {p.instagram && (
-                  <span className="text-blue-500 flex items-center gap-1 lowercase">
+                  <div className="flex items-center gap-1 text-blue-600 lowercase font-bold">
                     <User size={10} /> {p.instagram.replace('@', '')}
-                  </span>
+                  </div>
                 )}
               </div>
             </div>
           ))
         ) : (
           <div className="text-center mt-20 text-gray-400">
-            <p className="text-5xl mb-4">🔍</p>
-            <p className="font-medium">Nenhuma indicação encontrada em {config?.dbName}.</p>
+            <p className="text-4xl mb-4">📭</p>
+            <p className="font-medium uppercase text-xs tracking-widest text-gray-400">Nenhuma indicação em {nomeCategoriaNoBanco}</p>
           </div>
         )}
       </div>
