@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, use } from 'react' // Importamos o 'use' para desempacotar o params
+import { useEffect, useState, use } from 'react' // Importamos o 'use'
 import { supabase } from '../../../lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Phone, Star, User } from 'lucide-react'
@@ -15,15 +15,20 @@ const mapaCategorias: Record<string, string> = {
   'outros': 'Outros'
 }
 
-export default function CategoriaLista({ params }: { params: Promise<{ id: string }> | { id: string } }) {
+// Definimos o tipo de params como uma Promise, que é o padrão novo do Next.js
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export default function CategoriaLista({ params }: PageProps) {
   const [prestadores, setPrestadores] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   
-  // Resolvemos o params independentemente da versão do Next.js
-  const resolvedParams = params instanceof Promise ? use(params) : params;
-  const idURL = resolvedParams?.id?.toLowerCase();
-  const nomeCategoriaNoBanco = mapaCategorias[idURL];
+  // O 'use' aguarda o params ser resolvido, eliminando o 'undefined'
+  const { id } = use(params)
+  const idURL = id?.toLowerCase()
+  const nomeCategoriaNoBanco = mapaCategorias[idURL]
 
   const formatarNome = (nomeCompleto: string) => {
     if (!nomeCompleto) return 'Morador';
@@ -34,7 +39,7 @@ export default function CategoriaLista({ params }: { params: Promise<{ id: strin
   useEffect(() => {
     async function buscar() {
       if (!nomeCategoriaNoBanco) {
-        console.error("ID da URL não encontrado ou não mapeado:", idURL);
+        console.error("Categoria não mapeada para o ID:", idURL);
         setLoading(false);
         return;
       }
@@ -65,7 +70,7 @@ export default function CategoriaLista({ params }: { params: Promise<{ id: strin
 
       <div className="p-4 max-w-md mx-auto grid gap-4">
         {loading ? (
-          <div className="text-center py-10 text-gray-400 animate-pulse">Carregando...</div>
+          <div className="text-center py-10 text-gray-400 animate-pulse font-medium">Carregando...</div>
         ) : prestadores.length > 0 ? (
           prestadores.map((p) => (
             <div key={p.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
@@ -85,7 +90,7 @@ export default function CategoriaLista({ params }: { params: Promise<{ id: strin
               </div>
 
               {p.comentario && (
-                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 italic text-xs text-gray-700 leading-relaxed">
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 italic text-xs text-gray-700">
                   "{p.comentario}"
                 </div>
               )}
