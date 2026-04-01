@@ -4,16 +4,16 @@ import { supabase } from '../../../lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Phone, Star, User } from 'lucide-react'
 
-// Mapeamento de busca resiliente com nomenclaturas simples e diretas
-const mapaBusca: Record<string, { termo: string, titulo: string }> = {
-  'construcao': { termo: '%Construção%', titulo: 'Construção' },
-  'manutencao': { termo: '%Manutenção%', titulo: 'Manutenção' },
-  'limpeza': { termo: '%Limpeza%', titulo: 'Limpeza' },
-  'fretes': { termo: '%Fretes%', titulo: 'Fretes' },
-  'ti': { termo: '%Tecnologia%', titulo: 'Tecnologia' },
-  'alimentacao': { termo: '%Alimentação%', titulo: 'Alimentação' },
-  'estetica': { termo: '%Estética%', titulo: 'Estética' },
-  'outros': { termo: '%Outros%', titulo: 'Outros' }
+// Este mapa garante que 'limpeza' na URL busque exatamente 'Limpeza' no banco
+const mapaCategorias: Record<string, { dbName: string }> = {
+  'construcao': { dbName: 'Construção' },
+  'manutencao': { dbName: 'Manutenção' },
+  'limpeza': { dbName: 'Limpeza' },
+  'fretes': { dbName: 'Fretes' },
+  'ti': { dbName: 'Tecnologia' },
+  'alimentacao': { dbName: 'Alimentação' },
+  'estetica': { dbName: 'Estética' },
+  'outros': { dbName: 'Outros' }
 }
 
 export default function CategoriaLista({ params }: { params: { id: string } }) {
@@ -21,8 +21,8 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   
-  // Pega as configurações baseadas no ID da URL (ex: 'construcao')
-  const config = mapaBusca[params.id] || { termo: '%', titulo: 'Indicações' }
+  // Obtém a configuração baseada no ID da URL
+  const config = mapaCategorias[params.id]
 
   const formatarNome = (nomeCompleto: string) => {
     if (!nomeCompleto) return 'Morador';
@@ -33,24 +33,30 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     const buscarPrestadores = async () => {
+      // Se a categoria não existir no mapa, interrompe a busca
+      if (!config) {
+        setLoading(false)
+        return
+      }
+
       setLoading(true)
       const { data, error } = await supabase
         .from('prestadores')
         .select('*')
-        // ILIKE com % é a solução definitiva para encontrar os dados salvos
-        .ilike('categoria', config.termo) 
+        // O filtro .eq garante a exclusividade: categoria deve ser IGUAL ao dbName
+        .eq('categoria', config.dbName) 
         .order('id', { ascending: false })
       
       if (data) setPrestadores(data)
-      if (error) console.error("Erro na busca:", error)
+      if (error) console.error("Erro ao filtrar categoria:", error.message)
       setLoading(false)
     }
+
     buscarPrestadores()
-  }, [params.id, config.termo]) // Dependências corretas para atualizar ao mudar de página
+  }, [params.id, config])
 
   return (
     <div className="min-h-screen bg-gray-50 text-black pb-24">
-      {/* Cabeçalho Fixo */}
       <div className="bg-white p-6 shadow-sm mb-6 flex items-center gap-4 sticky top-0 z-10 border-b">
         <button 
           onClick={() => router.back()} 
@@ -58,12 +64,16 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
         >
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-xl font-bold text-blue-900 truncate">{config.titulo}</h1>
+        <h1 className="text-xl font-bold text-blue-900">
+          {config ? config.dbName : 'Indicações'}
+        </h1>
       </div>
 
       <div className="p-4 max-w-md mx-auto grid gap-4">
         {loading ? (
-          <div className="text-center py-10 text-gray-400 animate-pulse">Buscando indicações...</div>
+          <div className="text-center py-10 text-gray-400 animate-pulse font-medium">
+            Carregando lista de {config?.dbName}...
+          </div>
         ) : prestadores.length > 0 ? (
           prestadores.map((p) => (
             <div key={p.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
@@ -92,16 +102,15 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
               </div>
 
               {p.comentario && (
-                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 italic text-xs text-gray-700 leading-relaxed">
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 italic text-xs text-gray-700">
                   "{p.comentario}"
                 </div>
               )}
 
-              <div className="flex justify-between items-center pt-2 border-t border-gray-50 text-[10px] uppercase tracking-wider font-bold text-gray-400">
+              <div className="flex justify-between items-center pt-2 border-t border-gray-50 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
                 <span>Indicado por: {formatarNome(p.indicado_por)}</span>
                 {p.instagram && (
                   <span className="text-blue-500 flex items-center gap-1 lowercase">
-                    {/* Correção: Uso do componente User que foi devidamente importado */}
                     <User size={10} /> {p.instagram.replace('@', '')}
                   </span>
                 )}
@@ -111,7 +120,7 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
         ) : (
           <div className="text-center mt-20 text-gray-400">
             <p className="text-5xl mb-4">🔍</p>
-            <p className="font-medium">Nenhum profissional encontrado nesta categoria.</p>
+            <p className="font-medium">Nenhuma indicação encontrada em {config?.dbName}.</p>
           </div>
         )}
       </div>
