@@ -63,14 +63,18 @@ export default function Cadastrar() {
         <input placeholder="Instagram (Ex: @perfil)" className="p-4 rounded-xl border" onChange={e => setFormData({...formData, instagram: e.target.value})}/>
         <input placeholder="E-mail" type="email" className="p-4 rounded-xl border" onChange={e => setFormData({...formData, email: e.target.value})}/>
         
-        <select className="p-4 rounded-xl border bg-white" onChange={e => setFormData({...formData, categoria: e.target.value})}>
-          <option>🛠️ Construção e Reforma</option>
-          <option>⚡ Elétrica / Hidráulica</option>
-          <option>🧹 Limpeza</option>
-          <option>🚚 Mudanças</option>
-          <option>🍕 Alimentação</option>
-          <option>✨ Estética</option>
-          <option>📦 Outros</option>
+                  // Substitua o seu select por este, com estes nomes exatos:
+        <select 
+          className="p-4 rounded-xl border bg-white" 
+          onChange={e => setFormData({...formData, categoria: e.target.value})}
+        >
+          <option value="Construção e Reforma">🛠️ Construção e Reforma</option>
+          <option value="Manutenção e Elétrica">⚡ Elétrica / Hidráulica</option>
+          <option value="Limpeza e Diaristas">🧹 Limpeza</option>
+          <option value="Fretes e Mudanças">🚚 Mudanças</option>
+          <option value="Alimentação">🍕 Alimentação</option>
+          <option value="Estética">✨ Estética</option>
+          <option value="Outros">📦 Outros</option>
         </select>
 
         <div className="bg-white p-4 rounded-xl border">
