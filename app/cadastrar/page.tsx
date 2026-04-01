@@ -57,14 +57,14 @@ export default function Cadastrar() {
           value={formData.categoria}
           onChange={e => setFormData({...formData, categoria: e.target.value})}
         >
-          <option value="Construção e Reforma">🛠️ Construção e Reforma</option>
-          <option value="Manutenção e Elétrica">⚡ Manutenção e Elétrica</option>
-          <option value="Limpeza e Diaristas">🧹 Limpeza e Diaristas</option>
-          <option value="Fretes e Mudanças">🚚 Fretes e Mudanças</option>
-          <option value="Tecnologia">💻 Tecnologia</option>
-          <option value="Alimentação">🍕 Alimentação</option>
-          <option value="Estética">✨ Estética</option>
-          <option value="Outros">📦 Outros</option>
+          <option value="🛠️ Construção e Reforma">🛠️ Construção e Reforma</option>
+          <option value="⚡ Manutenção e Elétrica">⚡ Manutenção e Elétrica</option>
+          <option value="🧹 Limpeza e Diaristas">🧹 Limpeza e Diaristas</option>
+          <option value="🚚 Fretes e Mudanças">🚚 Fretes e Mudanças</option>
+          <option value="💻 Tecnologia">💻 Tecnologia</option>
+          <option value="🍕 Alimentação">🍕 Alimentação</option>
+          <option value="✨ Estética">✨ Estética</option>
+          <option value="📦 Outros">📦 Outros</option>
         </select>
 
         <div className="bg-white p-4 rounded-xl border">
