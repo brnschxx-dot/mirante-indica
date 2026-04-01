@@ -1,121 +1,95 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save } from 'lucide-react'
+import { ArrowLeft, Star } from 'lucide-react'
+import BottomNav from '../../components/BottomNav'
 
 export default function Cadastrar() {
-  const [nome, setNome] = useState('')
-  const [tel, setTel] = useState('')
-  const [categoria, setCategoria] = useState('')
-  const [status, setStatus] = useState('')
-  const [userEmail, setUserEmail] = useState('')
+  const [formData, setFormData] = useState({
+    nome: '', telefone: '', local: '', instagram: '', email: '', 
+    categoria: '🛠️ Construção e Reforma', avaliacao: 0, comentario: ''
+  })
+  const [userMetadata, setUserMetadata] = useState<any>(null)
+  const [mensagem, setMensagem] = useState('')
   const router = useRouter()
 
   useEffect(() => {
-    const checkUser = async () => {
+    const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.replace('/login')
-      } else {
-        setUserEmail(session.user.email || '')
-      }
+      if (session) setUserMetadata(session.user.user_metadata)
     }
-    checkUser()
-  }, [router])
+    getSession()
+  }, [])
 
-  const salvarIndicao = async (e: React.FormEvent) => {
+  const handleSalvar = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!categoria) return setStatus('⚠️ Selecione uma categoria')
-    
-    setStatus('Enviando...')
+    setMensagem('Salvando...')
+
+    // Formata o nome de quem indica (Nome + Sobrenome)
+    const partes = (userMetadata?.full_name || 'Morador Anônimo').split(' ')
+    const nomeExibicao = partes.length > 1 ? `${partes[0]} ${partes[partes.length - 1]}` : partes[0]
 
     const { error } = await supabase.from('prestadores').insert([{
-      nome: nome.trim(),
-      telefone: tel.replace(/\D/g, ''), // Salva apenas números
-      categoria,
-      indicado_por: userEmail
+      nome: formData.nome,
+      telefone: formData.telefone,
+      local: formData.local,
+      instagram: formData.instagram,
+      email: formData.email,
+      categoria: formData.categoria,
+      avaliacao: formData.avaliacao,
+      comentario: formData.comentario,
+      indicado_por: nomeExibicao // Salva Nome Sobrenome
     }])
 
-    if (error) {
-      setStatus('❌ Erro ao salvar: ' + error.message)
-    } else {
-      setStatus('✅ Indicação salva!')
-      // Pequeno delay para o usuário ver o sucesso antes de voltar
-      setTimeout(() => router.push('/'), 1500)
+    if (error) setMensagem('❌ Erro: ' + error.message)
+    else {
+      setMensagem('✅ Indicação realizada!')
+      setTimeout(() => router.push('/dashboard'), 1500)
     }
   }
 
-  const categorias = [
-    "🛠️ Construção e Reforma", "⚡ Elétrica / Hidráulica", 
-    "🧹 Limpeza", "🍕 Alimentação", "🚚 Mudanças", 
-    "💻 Tecnologia", "✨ Estética", "📦 Outros"
-  ]
-
   return (
-    <div className="p-6 max-w-md mx-auto bg-gray-50 min-h-screen text-black">
-      {/* Header de Navegação */}
-      <div className="flex items-center gap-4 mb-8">
-        <Link href="/dashboard" className="p-2 bg-white rounded-full shadow-sm">
-          <ArrowLeft size={24} className="text-gray-600" />
-        </Link>
-        <h1 className="text-2xl font-bold text-blue-900">Indicar Profissional</h1>
+    <div className="min-h-screen bg-gray-50 text-black pb-28 font-sans">
+      <div className="bg-white p-6 shadow-sm mb-6 flex items-center gap-4">
+        <button onClick={() => router.back()} className="p-2 bg-gray-100 rounded-full text-blue-600"><ArrowLeft size={20}/></button>
+        <h1 className="text-xl font-bold text-blue-900">Fazer Indicação</h1>
       </div>
 
-      <form onSubmit={salvarIndicao} className="space-y-5 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">Categoria</label>
-          <select 
-            className="w-full p-4 rounded-2xl border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
-            required
-          >
-            <option value="">Selecione...</option>
-            {categorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-          </select>
+      <form onSubmit={handleSalvar} className="p-6 max-w-md mx-auto flex flex-col gap-4">
+        <input placeholder="Nome do Profissional (Obrigatório)*" className="p-4 rounded-xl border" required onChange={e => setFormData({...formData, nome: e.target.value})}/>
+        <input placeholder="Telefone (Obrigatório)*" className="p-4 rounded-xl border" required onChange={e => setFormData({...formData, telefone: e.target.value})}/>
+        <input placeholder="Local/Bairro" className="p-4 rounded-xl border" onChange={e => setFormData({...formData, local: e.target.value})}/>
+        <input placeholder="Instagram (Ex: @perfil)" className="p-4 rounded-xl border" onChange={e => setFormData({...formData, instagram: e.target.value})}/>
+        <input placeholder="E-mail" type="email" className="p-4 rounded-xl border" onChange={e => setFormData({...formData, email: e.target.value})}/>
+        
+        <select className="p-4 rounded-xl border bg-white" onChange={e => setFormData({...formData, categoria: e.target.value})}>
+          <option>🛠️ Construção e Reforma</option>
+          <option>⚡ Elétrica / Hidráulica</option>
+          <option>🧹 Limpeza</option>
+          <option>🚚 Mudanças</option>
+          <option>🍕 Alimentação</option>
+          <option>✨ Estética</option>
+          <option>📦 Outros</option>
+        </select>
+
+        <div className="bg-white p-4 rounded-xl border">
+          <p className="text-sm font-bold text-gray-500 mb-2">Avaliação:</p>
+          <div className="flex gap-2">
+            {[1,2,3,4,5].map(num => (
+              <Star key={num} size={30} onClick={() => setFormData({...formData, avaliacao: num})}
+                className={formData.avaliacao >= num ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
+              />
+            ))}
+          </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">Nome do Profissional</label>
-          <input 
-            type="text"
-            className="w-full p-4 rounded-2xl border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="Ex: Pedro Pintor"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            autoCapitalize="words"
-            required
-          />
-        </div>
+        <textarea placeholder="Comentário sobre o serviço..." className="p-4 rounded-xl border h-24" onChange={e => setFormData({...formData, comentario: e.target.value})}/>
 
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">WhatsApp</label>
-          <input 
-            type="tel"
-            inputMode="numeric"
-            className="w-full p-4 rounded-2xl border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="11999999999"
-            value={tel}
-            onChange={(e) => setTel(e.target.value)}
-            required
-          />
-        </div>
-
-        <button 
-          type="submit"
-          className="w-full bg-blue-600 text-white p-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 active:scale-95 transition-all flex items-center justify-center gap-2"
-        >
-          <Save size={20} /> Salvar Indicação
-        </button>
+        <button type="submit" className="bg-blue-600 text-white p-4 rounded-xl font-bold shadow-lg">Confirmar Indicação</button>
+        {mensagem && <p className="text-center font-bold text-blue-600">{mensagem}</p>}
       </form>
-
-      {status && (
-        <div className="mt-6 p-4 rounded-2xl text-center font-bold bg-white border border-gray-100 shadow-sm animate-bounce">
-          {status}
-        </div>
-      )}
+      <BottomNav />
     </div>
   )
 }
