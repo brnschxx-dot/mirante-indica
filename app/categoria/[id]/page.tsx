@@ -1,10 +1,9 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, use } from 'react' // Importamos o 'use' para desempacotar o params
 import { supabase } from '../../../lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Phone, Star, User } from 'lucide-react'
 
-// Mapeamento rigoroso com chaves em minúsculo
 const mapaCategorias: Record<string, string> = {
   'construcao': 'Construção',
   'manutencao': 'Manutenção',
@@ -16,14 +15,15 @@ const mapaCategorias: Record<string, string> = {
   'outros': 'Outros'
 }
 
-export default function CategoriaLista({ params }: { params: { id: string } }) {
+export default function CategoriaLista({ params }: { params: Promise<{ id: string }> | { id: string } }) {
   const [prestadores, setPrestadores] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   
-  // CORREÇÃO: Forçamos o ID da URL para minúsculo para garantir que o mapa encontre a categoria
-  const idURL = params.id?.toLowerCase()
-  const nomeCategoriaNoBanco = mapaCategorias[idURL]
+  // Resolvemos o params independentemente da versão do Next.js
+  const resolvedParams = params instanceof Promise ? use(params) : params;
+  const idURL = resolvedParams?.id?.toLowerCase();
+  const nomeCategoriaNoBanco = mapaCategorias[idURL];
 
   const formatarNome = (nomeCompleto: string) => {
     if (!nomeCompleto) return 'Morador';
@@ -33,29 +33,21 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     async function buscar() {
-      // Se não encontrar no mapa, avisamos no console para você saber qual ID chegou
       if (!nomeCategoriaNoBanco) {
-        console.error("ID recebido na URL que falhou:", params.id);
+        console.error("ID da URL não encontrado ou não mapeado:", idURL);
         setLoading(false);
         return;
       }
 
       setLoading(true);
-      
-      // Busca exata na coluna "categoria" (minúsculo conforme confirmado)
       const { data, error } = await supabase
         .from('prestadores')
         .select('*')
         .eq('categoria', nomeCategoriaNoBanco)
         .order('id', { ascending: false });
       
-      if (error) {
-        console.error("Erro Supabase:", error.message);
-      }
-
-      if (data) {
-        setPrestadores(data);
-      }
+      if (error) console.error("Erro Supabase:", error.message);
+      if (data) setPrestadores(data);
       
       setLoading(false);
     }
@@ -63,8 +55,7 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
   }, [idURL, nomeCategoriaNoBanco]);
 
   return (
-    <div className="min-h-screen bg-gray-50 text-black pb-24">
-      {/* Cabeçalho */}
+    <div className="min-h-screen bg-gray-50 text-black pb-24 font-sans">
       <div className="bg-white p-6 shadow-sm mb-6 flex items-center gap-4 sticky top-0 z-10 border-b border-gray-100">
         <button onClick={() => router.back()} className="p-2 bg-gray-100 rounded-full text-blue-600 active:scale-90 transition-all">
           <ArrowLeft size={20} />
@@ -74,7 +65,7 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
 
       <div className="p-4 max-w-md mx-auto grid gap-4">
         {loading ? (
-          <div className="text-center py-10 text-gray-400 animate-pulse">Carregando indicações...</div>
+          <div className="text-center py-10 text-gray-400 animate-pulse">Carregando...</div>
         ) : prestadores.length > 0 ? (
           prestadores.map((p) => (
             <div key={p.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
@@ -88,21 +79,21 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
                   </div>
                   <p className="text-gray-600 text-sm font-semibold">{p.telefone}</p>
                 </div>
-                <a href={`https://wa.me/55${p.telefone?.replace(/\D/g, '')}`} target="_blank" className="bg-green-500 text-white p-3 rounded-full shadow-md active:scale-90 transition-all">
+                <a href={`https://wa.me/55${p.telefone?.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="bg-green-500 text-white p-3 rounded-full shadow-md active:scale-90 transition-all">
                   <Phone size={18} fill="currentColor" />
                 </a>
               </div>
 
               {p.comentario && (
-                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 italic text-xs text-gray-700">
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 italic text-xs text-gray-700 leading-relaxed">
                   "{p.comentario}"
                 </div>
               )}
 
-              <div className="flex justify-between items-center pt-3 border-t border-gray-50 text-[10px] uppercase font-bold text-gray-400">
+              <div className="flex justify-between items-center pt-3 border-t border-gray-50 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
                 <span>Por: {formatarNome(p.indicado_por)}</span>
                 {p.instagram && (
-                  <div className="flex items-center gap-1 text-blue-600 lowercase font-bold">
+                  <div className="flex items-center gap-1 text-blue-600 lowercase">
                     <User size={10} /> {p.instagram.replace('@', '')}
                   </div>
                 )}
@@ -112,7 +103,7 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
         ) : (
           <div className="text-center mt-20 text-gray-400">
             <p className="text-4xl mb-4">🔍</p>
-            <p className="font-medium uppercase text-[10px] tracking-widest">Nenhuma indicação em {nomeCategoriaNoBanco}</p>
+            <p className="font-medium uppercase text-[10px] tracking-widest text-gray-400">Nenhuma indicação em {nomeCategoriaNoBanco}</p>
           </div>
         )}
       </div>
