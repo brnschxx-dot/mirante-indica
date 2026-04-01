@@ -32,19 +32,25 @@ export default function CategoriaLista({ params }: { params: { id: string } }) {
     return `${partes[0]} ${partes[partes.length - 1]}`;
   }
 
-  useEffect(() => {
-    const buscarPrestadores = async () => {
-      // O ilike é o segredo: ele busca a palavra no meio da string, ignorando emojis!
-      const { data, error } = await supabase
-        .from('prestadores')
-        .select('*')
-        .ilike('categoria', config.palavraChave) 
-        .order('id', { ascending: false })
-      
-      if (data) setPrestadores(data)
-    }
-    buscarPrestadores()
-  }, [config.palavraChave])
+  // Dentro do useEffect no arquivo app/categoria/[id]/page.tsx
+
+useEffect(() => {
+  const buscarPrestadores = async () => {
+    // Pegamos a categoria exata do nosso mapa de URLs
+    const categoriaParaFiltro = configCategoria[params.id]?.titulo;
+
+    const { data, error } = await supabase
+      .from('prestadores')
+      .select('*')
+      // Mudança: EQ (equal) em vez de ILIKE para garantir separação total
+      // E usamos o campo 'categoria' que agora é salvo padronizado
+      .eq('categoria', categoriaParaFiltro) 
+      .order('id', { ascending: false })
+    
+    if (data) setPrestadores(data)
+  }
+  buscarPrestadores()
+}, [params.id])
 
   return (
     <div className="min-h-screen bg-gray-50 text-black pb-24">
