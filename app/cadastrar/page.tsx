@@ -9,7 +9,7 @@ import {
   Phone, 
   Tag, 
   MapPin, 
-  Instagram, 
+  Camera, 
   MessageSquare 
 } from 'lucide-react'
 import BottomNav from '../../components/BottomNav'
@@ -123,7 +123,7 @@ export default function Cadastrar() {
                 <input placeholder="Local/Bairro" className="w-full bg-gray-50 border border-gray-100 p-4 pl-12 rounded-2xl outline-none" onChange={e => setFormData({...formData, local: e.target.value})}/>
               </div>
               <div className="relative">
-                <Instagram className="absolute left-4 top-4 text-pink-500" size={18} />
+                <Camera className="absolute left-4 top-4 text-pink-500" size={18} />
                 <input placeholder="Instagram (@usuario)" className="w-full bg-gray-50 border border-gray-100 p-4 pl-12 rounded-2xl outline-none" onChange={e => setFormData({...formData, instagram: e.target.value})}/>
               </div>
             </div>
