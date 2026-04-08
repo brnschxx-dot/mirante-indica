@@ -6,39 +6,47 @@ import { useRouter } from 'next/navigation'
 import BottomNav from '../../components/BottomNav'
 import VoteButtons from '../../components/VoteButtons'
 
+// Isso garante que o Next.js sempre busque dados novos do banco
+export const dynamic = 'force-dynamic'
+
 export default function Indicacoes() {
   const router = useRouter()
   const [prestadores, setPrestadores] = useState<any[]>([])
-  // ADICIONE ESTA LINHA ABAIXO:
-  const [carregando, setCarregando] = useState(true) 
+  const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
     const fetchPrestadores = async () => {
+      setCarregando(true)
       try {
-        setCarregando(true) // Inicia o carregamento
-        const { data, error } = await supabase
+        // Chamada ao banco de dados
+        const { data, error, status } = await supabase
           .from('prestadores')
           .select('*')
           .order('id', { ascending: false })
-        
+
         if (error) {
-          console.error("Erro ao buscar dados:", error.message)
+          // Se houver erro de permissão ou conexão, avisa na tela
+          alert("Erro do Supabase: " + error.message)
+          console.error("Detalhes do erro:", error)
         } else {
+          console.log("Status da requisição:", status)
+          console.log("Dados recebidos:", data)
           setPrestadores(data || [])
         }
       } catch (err) {
-        console.error("Erro inesperado:", err)
+        console.error("Erro inesperado na aplicação:", err)
       } finally {
-        setCarregando(false) // Aqui agora a função existe!
+        setCarregando(false)
       }
     }
+
     fetchPrestadores()
   }, [])
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28 font-sans">
       
-      {/* Header com botão de voltar */}
+      {/* Header */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-20 border-b border-gray-100 flex items-center gap-3">
         <button 
           onClick={() => router.back()} 
@@ -50,9 +58,14 @@ export default function Indicacoes() {
       </div>
 
       <div className="p-4 space-y-3">
-        {prestadores.length > 0 ? (
+        {carregando ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-gray-400 font-bold text-sm">Carregando indicações...</p>
+          </div>
+        ) : prestadores.length > 0 ? (
           prestadores.map((p) => (
-            <div key={p.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+            <div key={p.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-2">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 font-bold text-lg uppercase shrink-0">
                   {p.nome.charAt(0)}
@@ -81,7 +94,9 @@ export default function Indicacoes() {
             </div>
           ))
         ) : (
-          <p className="text-center text-gray-400 py-10 font-bold text-sm">Nenhuma indicação encontrada.</p>
+          <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+            <p className="text-gray-400 font-bold text-sm">Nenhuma indicação encontrada no banco.</p>
+          </div>
         )}
       </div>
 
