@@ -19,10 +19,10 @@ export default function Indicacoes() {
       setCarregando(true)
       try {
         // Chamada ao banco de dados
-        const { data, error, status } = await supabase
-          .from('prestadores')
-          .select('*')
-          .order('id', { ascending: false })
+        const { data, error } = await supabase
+  .from('prestadores')
+  .select('*')
+  .order('id', { ascending: false })
 
         if (error) {
           // Se houver erro de permissão ou conexão, avisa na tela
