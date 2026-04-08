@@ -27,7 +27,7 @@ export default function Login() {
       setCarregando(false)
     } else {
       setMensagem('✅ Sucesso! Redirecionando...')
-      router.replace('/dashboard') 
+      router.replace('/') 
     }
   }
 
