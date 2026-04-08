@@ -11,17 +11,27 @@ export default function Indicacoes() {
   const [prestadores, setPrestadores] = useState<any[]>([])
 
   useEffect(() => {
-    const fetchPrestadores = async () => {
-      // Busca todos os prestadores do banco de dados
+  const fetchPrestadores = async () => {
+    try {
       const { data, error } = await supabase
-        .from('prestadores')
+        .from('prestadores') // Verifique se o nome no Supabase é exatamente este
         .select('*')
         .order('id', { ascending: false })
       
-      if (data) setPrestadores(data)
+      if (error) {
+        console.error("Erro ao buscar dados:", error.message)
+      } else {
+        console.log("Dados carregados com sucesso:", data)
+        setPrestadores(data || [])
+      }
+    } catch (err) {
+      console.error("Erro inesperado:", err)
+    } finally {
+      setCarregando(false)
     }
-    fetchPrestadores()
-  }, [])
+  }
+  fetchPrestadores()
+}, [])
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28 font-sans">
