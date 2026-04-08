@@ -1,122 +1,167 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
+import { useRouter } from 'next/navigation'
 import { 
-  Search, 
-  Hammer, 
-  Zap, 
-  Eraser, 
-  Truck, 
-  Monitor, 
-  Pizza, 
-  Sparkles, 
-  MoreHorizontal,
-  Star,
-  MapPin
+  ArrowLeft, 
+  Star, 
+  User, 
+  Phone, 
+  Tag, 
+  MapPin, 
+  Camera, 
+  MessageSquare 
 } from 'lucide-react'
-import Link from 'next/link'
 import BottomNav from '../../components/BottomNav'
 
-// Configuração das categorias do Carrossel
-const categoriasCarrossel = [
-  { nome: 'Construção', icon: <Hammer size={24} />, color: 'bg-orange-100 text-orange-600', href: '/categoria/Construção' },
-  { nome: 'Manutenção', icon: <Zap size={24} />, color: 'bg-yellow-100 text-yellow-600', href: '/categoria/Manutenção' },
-  { nome: 'Limpeza', icon: <Eraser size={24} />, color: 'bg-blue-100 text-blue-600', href: '/categoria/Limpeza' },
-  { nome: 'Fretes', icon: <Truck size={24} />, color: 'bg-purple-100 text-purple-600', href: '/categoria/Fretes' },
-  { nome: 'Tecnologia', icon: <Monitor size={24} />, color: 'bg-indigo-100 text-indigo-600', href: '/categoria/Tecnologia' },
-  { nome: 'Comida', icon: <Pizza size={24} />, color: 'bg-red-100 text-red-600', href: '/categoria/Alimentação' },
-  { nome: 'Estética', icon: <Sparkles size={24} />, color: 'bg-pink-100 text-pink-600', href: '/categoria/Estética' },
-  { nome: 'Mais', icon: <MoreHorizontal size={24} />, color: 'bg-gray-100 text-gray-600', href: '/categorias' },
-]
+export default function Cadastrar() {
+  const [formData, setFormData] = useState({
+    nome: '', telefone: '', local: '', Camera: '', email: '', 
+    categoria: 'Construção', 
+    avaliacao: 0, // ALTERADO: Agora começa em 0 (estrelas vazias)
+    comentario: ''
+  })
+  const [userMetadata, setUserMetadata] = useState<any>(null)
+  const [mensagem, setMensagem] = useState('')
+  const router = useRouter()
 
-export default function Home() {
-  const [busca, setBusca] = useState('')
-  const [prestadores, setPrestadores] = useState<any[]>([])
-
-  // Busca inicial de prestadores (ex: os mais recentes ou em destaque)
   useEffect(() => {
-    const fetchPrestadores = async () => {
-      const { data } = await supabase
-        .from('prestadores')
-        .select('*')
-        .limit(5)
-      if (data) setPrestadores(data)
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) setUserMetadata(session.user.user_metadata)
     }
-    fetchPrestadores()
+    getSession()
   }, [])
 
+  const handleSalvar = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // Validação opcional: impede salvar se não houver avaliação
+    if (formData.avaliacao === 0) {
+      setMensagem('⚠️ Por favor, selecione uma nota!')
+      return
+    }
+
+    setMensagem('Salvando...')
+
+    const partes = (userMetadata?.full_name || 'Morador').split(' ')
+    const nomeExibicao = partes.length > 1 ? `${partes[0]} ${partes[partes.length - 1]}` : partes[0]
+
+    const { error } = await supabase.from('prestadores').insert([{
+      ...formData,
+      indicado_por: nomeExibicao 
+    }])
+
+    if (error) setMensagem('❌ Erro: ' + error.message)
+    else {
+      setMensagem('✅ Indicação realizada!')
+      setTimeout(() => router.push('/dashboard'), 1500)
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-28 font-sans">
-      
-      {/* Header e Busca */}
-      <div className="bg-white p-6 pt-10 rounded-b-[40px] shadow-sm border-b border-gray-100">
-        <h1 className="text-2xl font-black text-blue-900 mb-4 tracking-tight">Mirante Indica</h1>
-        
-        <div className="relative">
-          <Search className="absolute left-4 top-4 text-gray-400" size={20} />
-          <input 
-            type="text"
-            placeholder="O que você está procurando?"
-            className="w-full bg-gray-50 border-none p-4 pl-12 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-700 font-medium"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-          />
-        </div>
+    <div className="min-h-screen bg-gray-50 text-black pb-32 font-sans">
+      <div className="bg-white p-6 shadow-sm mb-6 flex items-center gap-4 sticky top-0 z-10 border-b border-gray-100">
+        <button onClick={() => router.back()} className="p-2 bg-gray-100 rounded-full text-blue-600 active:scale-90 transition-all">
+          <ArrowLeft size={20}/>
+        </button>
+        <h1 className="text-xl font-bold text-blue-900">Nova Indicação</h1>
       </div>
 
-      {/* CARROSSEL DE CATEGORIAS */}
-      <div className="w-full py-6">
-        <div className="flex items-center justify-between px-6 mb-4">
-          <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Categorias</h2>
-          <Link href="/categorias" className="text-xs font-bold text-blue-600">Ver todas</Link>
-        </div>
+      <div className="max-w-md mx-auto p-4">
+        <form onSubmit={handleSalvar} className="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden">
+          
+          <div className="bg-blue-600 p-6 text-white text-center">
+            <h2 className="text-lg font-semibold tracking-tight italic">"Quem indica, amigo é!"</h2>
+          </div>
 
-        <div className="flex overflow-x-auto gap-4 px-6 pb-2 scrollbar-hide snap-x">
-          {categoriasCarrossel.map((cat, index) => (
-            <Link 
-              key={index} 
-              href={cat.href}
-              className="flex flex-col items-center gap-2 snap-center min-w-[70px]"
-            >
-              <div className={`w-16 h-16 ${cat.color} rounded-[22px] flex items-center justify-center shadow-sm active:scale-90 transition-all border border-white`}>
-                {cat.icon}
-              </div>
-              <span className="text-[10px] font-bold text-gray-500 text-center leading-tight">
-                {cat.nome}
-              </span>
-            </Link>
-          ))}
-        </div>
-      </div>
+          <div className="p-6 space-y-5">
+            
+            <div className="relative">
+              <User className="absolute left-4 top-4 text-gray-400" size={18} />
+              <input 
+                required 
+                placeholder="Nome do Profissional*" 
+                className="w-full bg-gray-50 border border-gray-100 p-4 pl-12 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                onChange={e => setFormData({...formData, nome: e.target.value})}
+              />
+            </div>
 
-      {/* Lista de Prestadores em Destaque */}
-      <div className="px-6">
-        <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-4">Destaques recentes</h2>
-        
-        <div className="space-y-4">
-          {prestadores.map((p) => (
-            <div key={p.id} className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4 active:scale-[0.98] transition-all">
-              <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 font-bold text-xl uppercase">
-                {p.nome.charAt(0)}
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-gray-800 leading-tight">{p.nome}</h3>
-                <div className="flex items-center gap-1 text-yellow-500 my-1">
-                  <Star size={12} className="fill-yellow-500" />
-                  <span className="text-xs font-bold">{p.avaliacao || '5.0'}</span>
-                  <span className="text-gray-300 mx-1">•</span>
-                  <span className="text-gray-400 text-[10px] font-medium uppercase">{p.categoria}</span>
-                </div>
-                <div className="flex items-center gap-1 text-gray-400">
-                  <MapPin size={12} />
-                  <span className="text-[11px] truncate">{p.local || 'Condomínio Mirante'}</span>
-                </div>
+            <div className="relative">
+              <Phone className="absolute left-4 top-4 text-gray-400" size={18} />
+              <input 
+                required 
+                placeholder="Telefone*" 
+                className="w-full bg-gray-50 border border-gray-100 p-4 pl-12 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
+                onChange={e => setFormData({...formData, telefone: e.target.value})}
+              />
+            </div>
+
+            <div className="relative">
+              <Tag className="absolute left-4 top-4 text-gray-400" size={18} />
+              <select 
+                className="w-full bg-gray-50 border border-gray-100 p-4 pl-12 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none appearance-none font-medium text-gray-700" 
+                value={formData.categoria}
+                onChange={e => setFormData({...formData, categoria: e.target.value})}
+              >
+                <option value="Construção">🛠️ Construção e Reforma</option>
+                <option value="Manutenção">⚡ Manutenção e Elétrica</option>
+                <option value="Limpeza">🧹 Limpeza e Diaristas</option>
+                <option value="Fretes">🚚 Fretes e Mudanças</option>
+                <option value="Tecnologia">💻 Tecnologia</option>
+                <option value="Alimentação">🍕 Alimentação</option>
+                <option value="Estética">✨ Estética</option>
+                <option value="Outros">📦 Outros</option>
+              </select>
+            </div>
+
+            {/* Avaliação - Estrelas começam vazias */}
+            <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100 text-center">
+              <p className="text-[10px] font-bold text-gray-400 uppercase mb-3 tracking-widest">Sua Nota</p>
+              <div className="flex justify-center gap-2">
+                {[1,2,3,4,5].map(num => (
+                  <button key={num} type="button" onClick={() => setFormData({...formData, avaliacao: num})} className="active:scale-125 transition-transform">
+                    <Star 
+                      size={32} 
+                      className={formData.avaliacao >= num ? "fill-yellow-400 text-yellow-400" : "text-gray-200"} 
+                    />
+                  </button>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
-      </div>
 
+            <div className="space-y-4">
+              <div className="relative">
+                <MapPin className="absolute left-4 top-4 text-gray-400" size={18} />
+                <input placeholder="Local/Bairro" className="w-full bg-gray-50 border border-gray-100 p-4 pl-12 rounded-2xl outline-none" onChange={e => setFormData({...formData, local: e.target.value})}/>
+              </div>
+              <div className="relative">
+                <Camera className="absolute left-4 top-4 text-pink-500" size={18} />
+                <input placeholder="Instagram (@usuario)" className="w-full bg-gray-50 border border-gray-100 p-4 pl-12 rounded-2xl outline-none" onChange={e => setFormData({...formData, Camera: e.target.value})}/>
+              </div>
+            </div>
+
+            <div className="relative">
+              <MessageSquare className="absolute left-4 top-4 text-gray-400" size={18} />
+              <textarea 
+                placeholder="Comentário..." 
+                className="w-full bg-gray-50 border border-gray-100 p-4 pl-12 rounded-2xl h-24 outline-none resize-none focus:ring-2 focus:ring-blue-500" 
+                onChange={e => setFormData({...formData, comentario: e.target.value})}
+              />
+            </div>
+
+            <button type="submit" className="w-full bg-blue-600 text-white p-5 rounded-2xl font-bold shadow-lg shadow-blue-100 active:scale-95 transition-all">
+              Confirmar Indicação
+            </button>
+
+            {mensagem && (
+              <p className="text-center font-bold text-blue-600 animate-pulse text-sm">
+                {mensagem}
+              </p>
+            )}
+          </div>
+        </form>
+      </div>
       <BottomNav />
     </div>
   )
