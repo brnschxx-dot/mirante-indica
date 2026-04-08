@@ -2,13 +2,14 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useRouter } from 'next/navigation'
-import { User, LogOut, Camera, Mail } from 'lucide-react'
+import { User, LogOut, Camera, Mail, Trash2, RefreshCw } from 'lucide-react'
 import BottomNav from '../../components/BottomNav'
 
 export default function Perfil() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
-  const [loadingFoto, setLoadingFoto] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -19,98 +20,73 @@ export default function Perfil() {
     fetchUser()
   }, [router])
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
+  const updateAvatar = async (base64: string | null) => {
+    setLoading(true)
+    const { data, error } = await supabase.auth.updateUser({
+      data: { avatar_url: base64 }
+    })
+    if (!error && data.user) setUser(data.user)
+    setLoading(false)
+    setShowMenu(false)
   }
 
-  // Função para salvar a foto no metadata do usuário
-  const handleFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-
-    setLoadingFoto(true)
-    
-    // Converte a imagem para Base64 para salvar direto no perfil
     const reader = new FileReader()
-    reader.onloadend = async () => {
-      const base64String = reader.result as string
-      
-      const { data, error } = await supabase.auth.updateUser({
-        data: { avatar_url: base64String }
-      })
-
-      if (!error && data.user) {
-        setUser(data.user)
-      } else {
-        alert('Erro ao atualizar foto')
-      }
-      setLoadingFoto(false)
-    }
+    reader.onloadend = () => updateAvatar(reader.result as string)
     reader.readAsDataURL(file)
   }
 
-  if (!user) return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Carregando...</div>
+  if (!user) return null
 
   const avatarUrl = user.user_metadata?.avatar_url
-  const fullName = user.user_metadata?.full_name || 'Morador'
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28 font-sans">
-      
-      <div className="bg-white p-6 shadow-sm border-b border-gray-100 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-blue-900">Meu Perfil</h1>
-      </div>
+      <div className="bg-white p-6 shadow-sm border-b border-gray-100"><h1 className="text-xl font-bold text-blue-900 text-center">Meu Perfil</h1></div>
 
-      <div className="p-6">
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center gap-4">
+      <div className="p-6 max-w-md mx-auto">
+        <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col items-center">
           
-          {/* Componente da Foto de Perfil */}
-          <div className="relative">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-md">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="Perfil" className="w-full h-full object-cover" />
-              ) : (
-                <User size={40} className="text-gray-300" />
-              )}
-            </div>
-            
-            {/* Botão de Upload da Câmera */}
-            <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer shadow-lg active:scale-95 transition-transform">
-              <Camera size={16} />
-              <input 
-                type="file" 
-                accept="image/*" 
-                className="hidden" 
-                onChange={handleFotoUpload} 
-                disabled={loadingFoto}
-              />
-            </label>
-          </div>
-          
-          {loadingFoto && <p className="text-xs text-blue-600 animate-pulse">Atualizando foto...</p>}
+          <div className="relative group">
+            <button 
+              onClick={() => setShowMenu(!showMenu)}
+              className="w-28 h-28 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-lg transition-transform active:scale-95"
+            >
+              {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover" /> : <User size={48} className="text-gray-300" />}
+              <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Camera size={24} className="text-white" />
+              </div>
+            </button>
 
-          <div className="text-center">
-            <h2 className="text-lg font-bold text-gray-800">{fullName}</h2>
-            <div className="flex items-center justify-center gap-1 text-sm text-gray-500 mt-1">
-              <Mail size={14} />
-              <span>{user.email}</span>
-            </div>
+            {/* Menu de Opções da Foto */}
+            {showMenu && (
+              <div className="absolute top-full mt-2 bg-white shadow-xl border border-gray-100 rounded-2xl p-2 z-30 w-48 left-1/2 -translate-x-1/2 animate-in fade-in slide-in-from-top-2">
+                <label className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl cursor-pointer text-sm font-bold text-gray-700">
+                  <RefreshCw size={16} className="text-blue-500" />
+                  {avatarUrl ? 'Trocar Foto' : 'Incluir Foto'}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
+                </label>
+                {avatarUrl && (
+                  <button onClick={() => updateAvatar(null)} className="w-full flex items-center gap-3 p-3 hover:bg-red-50 rounded-xl text-sm font-bold text-red-600">
+                    <Trash2 size={16} /> Remover
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="w-full h-px bg-gray-100 my-2"></div>
+          <div className="text-center mt-6">
+            <h2 className="text-xl font-black text-gray-800">{user.user_metadata?.full_name || 'Morador'}</h2>
+            <p className="text-sm text-gray-400 flex items-center justify-center gap-1 mt-1"><Mail size={14}/> {user.email}</p>
+          </div>
 
-          <button 
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 py-3 rounded-xl font-bold active:scale-95 transition-all"
-          >
-            <LogOut size={18} />
-            Sair do App
+          <button onClick={() => supabase.auth.signOut().then(() => router.push('/login'))} className="mt-8 w-full py-4 bg-gray-50 text-gray-400 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-red-50 hover:text-red-600 transition-colors">
+            <LogOut size={18} /> Sair do App
           </button>
-
         </div>
       </div>
-
       <BottomNav />
     </div>
   )
