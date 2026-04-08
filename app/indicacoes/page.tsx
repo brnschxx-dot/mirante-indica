@@ -9,29 +9,31 @@ import VoteButtons from '../../components/VoteButtons'
 export default function Indicacoes() {
   const router = useRouter()
   const [prestadores, setPrestadores] = useState<any[]>([])
+  // ADICIONE ESTA LINHA ABAIXO:
+  const [carregando, setCarregando] = useState(true) 
 
   useEffect(() => {
-  const fetchPrestadores = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('prestadores') // Verifique se o nome no Supabase é exatamente este
-        .select('*')
-        .order('id', { ascending: false })
-      
-      if (error) {
-        console.error("Erro ao buscar dados:", error.message)
-      } else {
-        console.log("Dados carregados com sucesso:", data)
-        setPrestadores(data || [])
+    const fetchPrestadores = async () => {
+      try {
+        setCarregando(true) // Inicia o carregamento
+        const { data, error } = await supabase
+          .from('prestadores')
+          .select('*')
+          .order('id', { ascending: false })
+        
+        if (error) {
+          console.error("Erro ao buscar dados:", error.message)
+        } else {
+          setPrestadores(data || [])
+        }
+      } catch (err) {
+        console.error("Erro inesperado:", err)
+      } finally {
+        setCarregando(false) // Aqui agora a função existe!
       }
-    } catch (err) {
-      console.error("Erro inesperado:", err)
-    } finally {
-      setCarregando(false)
     }
-  }
-  fetchPrestadores()
-}, [])
+    fetchPrestadores()
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28 font-sans">
