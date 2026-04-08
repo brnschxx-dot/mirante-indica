@@ -16,8 +16,10 @@ import BottomNav from '../../components/BottomNav'
 
 export default function Cadastrar() {
   const [formData, setFormData] = useState({
-    nome: '', telefone: '', local: '', instagram: '', email: '', 
-    categoria: 'Construção', avaliacao: 5, comentario: ''
+    nome: '', telefone: '', local: '', Camera: '', email: '', 
+    categoria: 'Construção', 
+    avaliacao: 0, // ALTERADO: Agora começa em 0 (estrelas vazias)
+    comentario: ''
   })
   const [userMetadata, setUserMetadata] = useState<any>(null)
   const [mensagem, setMensagem] = useState('')
@@ -33,6 +35,13 @@ export default function Cadastrar() {
 
   const handleSalvar = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validação opcional: impede salvar se não houver avaliação
+    if (formData.avaliacao === 0) {
+      setMensagem('⚠️ Por favor, selecione uma nota!')
+      return
+    }
+
     setMensagem('Salvando...')
 
     const partes = (userMetadata?.full_name || 'Morador').split(' ')
@@ -106,12 +115,16 @@ export default function Cadastrar() {
               </select>
             </div>
 
+            {/* Avaliação - Estrelas começam vazias */}
             <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100 text-center">
               <p className="text-[10px] font-bold text-gray-400 uppercase mb-3 tracking-widest">Sua Nota</p>
               <div className="flex justify-center gap-2">
                 {[1,2,3,4,5].map(num => (
                   <button key={num} type="button" onClick={() => setFormData({...formData, avaliacao: num})} className="active:scale-125 transition-transform">
-                    <Star size={32} className={formData.avaliacao >= num ? "fill-yellow-400 text-yellow-400" : "text-gray-200"} />
+                    <Star 
+                      size={32} 
+                      className={formData.avaliacao >= num ? "fill-yellow-400 text-yellow-400" : "text-gray-200"} 
+                    />
                   </button>
                 ))}
               </div>
@@ -124,7 +137,7 @@ export default function Cadastrar() {
               </div>
               <div className="relative">
                 <Camera className="absolute left-4 top-4 text-pink-500" size={18} />
-                <input placeholder="Instagram (@usuario)" className="w-full bg-gray-50 border border-gray-100 p-4 pl-12 rounded-2xl outline-none" onChange={e => setFormData({...formData, instagram: e.target.value})}/>
+                <input placeholder="Instagram (@usuario)" className="w-full bg-gray-50 border border-gray-100 p-4 pl-12 rounded-2xl outline-none" onChange={e => setFormData({...formData, Camera: e.target.value})}/>
               </div>
             </div>
 
