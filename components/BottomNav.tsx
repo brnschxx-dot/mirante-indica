@@ -1,40 +1,34 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Search, Plus, User } from 'lucide-react'
+import { Search, Trophy, PlusCircle, LayoutDashboard } from 'lucide-react'
 
 export default function BottomNav() {
   const pathname = usePathname()
-  
-  const getCor = (caminho: string) => 
-    pathname === caminho ? 'text-blue-600' : 'text-gray-400 hover:text-blue-500'
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center p-2 pb-6 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-      {/* Botão Início (Feed) */}
-      <Link href="/dashboard" className={`flex flex-col items-center p-2 w-16 ${getCor('/dashboard')}`}>
-        <Home size={24} />
-        <span className="text-[10px] font-bold mt-1">Início</span>
-      </Link>
+    <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 px-6 py-4 flex justify-between items-center z-50">
       
-      {/* Botão Lupa */}
-      <Link href="/explorar" className={`flex flex-col items-center p-2 w-16 ${getCor('/explorar')}`}>
+      <Link href="/" className={`flex flex-col items-center gap-1 transition-colors ${pathname === '/' ? 'text-blue-600' : 'text-gray-400'}`}>
         <Search size={24} />
-        <span className="text-[10px] font-bold mt-1">Lupa</span>
+        <span className="text-[10px] font-bold">Início</span>
       </Link>
 
-      {/* Botão Central de Cadastro (+) */}
-      <Link href="/cadastrar" className="flex flex-col items-center -mt-8 relative z-10">
-        <div className="bg-blue-600 text-white rounded-full p-4 shadow-lg border-4 border-gray-50 active:scale-95 transition-transform">
-          <Plus size={28} strokeWidth={3} />
-        </div>
+      <Link href="/destaques" className={`flex flex-col items-center gap-1 transition-colors ${pathname === '/destaques' ? 'text-yellow-500' : 'text-gray-400'}`}>
+        <Trophy size={24} />
+        <span className="text-[10px] font-bold">Destaques</span>
       </Link>
 
-      {/* Botão Perfil */}
-      <Link href="/perfil" className={`flex flex-col items-center p-2 w-16 ${getCor('/perfil')}`}>
-        <User size={24} />
-        <span className="text-[10px] font-bold mt-1">Perfil</span>
+      <Link href="/cadastrar" className={`flex flex-col items-center gap-1 transition-colors ${pathname === '/cadastrar' ? 'text-blue-600' : 'text-gray-400'}`}>
+        <PlusCircle size={24} />
+        <span className="text-[10px] font-bold">Indicar</span>
       </Link>
+
+      <Link href="/dashboard" className={`flex flex-col items-center gap-1 transition-colors ${pathname === '/dashboard' ? 'text-blue-600' : 'text-gray-400'}`}>
+        <LayoutDashboard size={24} />
+        <span className="text-[10px] font-bold">Menu</span>
+      </Link>
+
     </div>
   )
 }

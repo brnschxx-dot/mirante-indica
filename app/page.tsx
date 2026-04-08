@@ -1,173 +1,109 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabaseClient' 
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabaseClient'
+import { Search, Hammer, Zap, Eraser, Truck, Monitor, Pizza, Sparkles, MoreHorizontal, Star, MapPin } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Search, Filter, Phone } from 'lucide-react'
+import BottomNav from '../components/BottomNav'
+import VoteButtons from '../components/VoteButtons' // <-- Importando o componente
+
+const categoriasCarrossel = [
+  { nome: 'Construção', icon: <Hammer size={24} />, color: 'bg-orange-100 text-orange-600', href: '/categoria/Construção' },
+  { nome: 'Manutenção', icon: <Zap size={24} />, color: 'bg-yellow-100 text-yellow-600', href: '/categoria/Manutenção' },
+  { nome: 'Limpeza', icon: <Eraser size={24} />, color: 'bg-blue-100 text-blue-600', href: '/categoria/Limpeza' },
+  { nome: 'Fretes', icon: <Truck size={24} />, color: 'bg-purple-100 text-purple-600', href: '/categoria/Fretes' },
+  { nome: 'Tecnologia', icon: <Monitor size={24} />, color: 'bg-indigo-100 text-indigo-600', href: '/categoria/Tecnologia' },
+  { nome: 'Comida', icon: <Pizza size={24} />, color: 'bg-red-100 text-red-600', href: '/categoria/Alimentação' },
+  { nome: 'Estética', icon: <Sparkles size={24} />, color: 'bg-pink-100 text-pink-600', href: '/categoria/Estética' },
+  { nome: 'Mais', icon: <MoreHorizontal size={24} />, color: 'bg-gray-100 text-gray-600', href: '/categorias' },
+]
 
 export default function Home() {
-  const [prestadores, setPrestadores] = useState<any[]>([])
-  const [carregando, setCarregando] = useState(true)
-  
-  // Novos estados para a Busca e Filtro
   const [busca, setBusca] = useState('')
-  const [categoriaFiltro, setCategoriaFiltro] = useState('Todas')
-  const router = useRouter()
+  const [prestadores, setPrestadores] = useState<any[]>([])
 
   useEffect(() => {
-    const buscarDados = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        router.replace('/login')
-        return
-      }
-
-      // Busca os dados já ordenados dos mais recentes para os mais antigos
-      const { data } = await supabase
-        .from('prestadores')
-        .select('*')
-        .order('id', { ascending: false })
-      
+    const fetchPrestadores = async () => {
+      const { data } = await supabase.from('prestadores').select('*').limit(10)
       if (data) setPrestadores(data)
-      setCarregando(false)
     }
-
-    buscarDados()
-  }, [router])
-
-  // Lógica para filtrar a lista em TEMPO REAL
-  const prestadoresFiltrados = prestadores.filter((p) => {
-    const bateuBusca = p.nome.toLowerCase().includes(busca.toLowerCase()) || 
-                       (p.categoria && p.categoria.toLowerCase().includes(busca.toLowerCase()))
-    
-    const bateuCategoria = categoriaFiltro === 'Todas' || p.categoria === categoriaFiltro
-
-    return bateuBusca && bateuCategoria
-  })
-
-  // Lista de categorias para o filtro
-  const listaCategorias = [
-    "Todas",
-    "🛠️ Construção e Reforma (Pintor, Pedreiro)",
-    "⚡ Manutenção (Eletricista, Encanador)",
-    "🧹 Limpeza e Diarista",
-    "🚚 Fretes e Mudanças",
-    "💻 TI e Eletrônicos",
-    "🍕 Alimentação",
-    "✨ Estética e Saúde",
-    "📦 Outros"
-  ]
+    fetchPrestadores()
+  }, [])
 
   return (
-    <div className="p-4 sm:p-8 max-w-2xl mx-auto font-sans bg-gray-50 min-h-screen pb-20 text-black">
+    <div className="min-h-screen bg-gray-50 pb-28 font-sans">
       
-      {/* Cabeçalho Mobile */}
-      <div className="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-blue-900">Indicações</h1>
-        <Link href="/dashboard" className="bg-gray-200 text-gray-700 px-4 py-2 rounded-full font-bold text-sm hover:bg-gray-300 transition-all shadow-sm">
-          Voltar ao Menu
-        </Link>
-      </div>
-
-      {/* Barra de Pesquisa e Filtros */}
-      <div className="flex flex-col gap-3 mb-8 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-        
-        {/* Campo de Busca */}
+      <div className="bg-white p-6 pt-10 rounded-b-[40px] shadow-sm border-b border-gray-100">
+        <h1 className="text-2xl font-black text-blue-900 mb-4 tracking-tight">Mirante Indica</h1>
         <div className="relative">
-          <Search className="absolute left-3 top-3.5 text-gray-400" size={20} />
+          <Search className="absolute left-4 top-4 text-gray-400" size={20} />
           <input 
             type="text"
-            placeholder="Buscar por nome ou serviço..."
+            placeholder="O que você está procurando?"
+            className="w-full bg-gray-50 border-none p-4 pl-12 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-700 font-medium"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl outline-blue-500 bg-gray-50 focus:bg-white transition-colors"
           />
-        </div>
-
-        {/* Filtro de Categoria */}
-        <div className="relative">
-          <Filter className="absolute left-3 top-3.5 text-gray-400" size={20} />
-          <select 
-            value={categoriaFiltro}
-            onChange={(e) => setCategoriaFiltro(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl outline-blue-500 bg-gray-50 focus:bg-white appearance-none text-gray-700 font-medium"
-          >
-            {listaCategorias.map((cat, idx) => (
-              <option key={idx} value={cat}>{cat.replace(/[^a-zA-ZÀ-ÿ\s()]/g, '')} {/* Remove o emoji no texto do select para ficar mais limpo */}</option>
-            ))}
-          </select>
         </div>
       </div>
 
-      {/* SKELETON SCREEN (Mostra enquanto carrega) */}
-      {carregando ? (
-        <div className="grid gap-4 animate-pulse">
-          {[1, 2, 3].map((skeleton) => (
-            <div key={skeleton} className="border border-gray-100 p-5 rounded-2xl shadow-sm bg-white flex justify-between items-center">
-              <div className="flex flex-col gap-2 w-2/3">
-                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      <div className="w-full py-6">
+        <div className="flex items-center justify-between px-6 mb-4">
+          <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Categorias</h2>
+          <Link href="/categorias" className="text-xs font-bold text-blue-600">Ver todas</Link>
+        </div>
+
+        <div className="flex overflow-x-auto gap-4 px-6 pb-2 scrollbar-hide snap-x">
+          {categoriasCarrossel.map((cat, index) => (
+            <Link key={index} href={cat.href} className="flex flex-col items-center gap-2 snap-center min-w-[70px]">
+              <div className={`w-16 h-16 ${cat.color} rounded-[22px] flex items-center justify-center shadow-sm active:scale-90 transition-all border border-white`}>
+                {cat.icon}
               </div>
-              <div className="h-12 w-12 bg-gray-200 rounded-full"></div>
+              <span className="text-[10px] font-bold text-gray-500 text-center leading-tight">
+                {cat.nome}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      <div className="px-6">
+        <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-4">Últimos Adicionados</h2>
+        
+        <div className="space-y-4">
+          {prestadores.map((p) => (
+            <div key={p.id} className="bg-white p-5 rounded-[32px] shadow-sm border border-gray-100 flex flex-col gap-4">
+              
+              {/* Parte de cima do Card */}
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 font-bold text-xl uppercase shrink-0">
+                  {p.nome.charAt(0)}
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-800 leading-tight">{p.nome}</h3>
+                  <div className="flex items-center gap-1 text-yellow-500 my-1">
+                    <Star size={12} className="fill-yellow-500" />
+                    <span className="text-xs font-bold">{p.avaliacao || '5.0'}</span>
+                    <span className="text-gray-300 mx-1">•</span>
+                    <span className="text-gray-400 text-[10px] font-bold uppercase">{p.categoria}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-gray-400">
+                    <MapPin size={12} />
+                    <span className="text-[11px] truncate">{p.local || 'Condomínio Mirante'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botões de Voto Integrados */}
+              <div className="border-t border-gray-50 pt-3 flex justify-between items-center">
+                <VoteButtons prestadorId={p.id} />
+              </div>
+
             </div>
           ))}
         </div>
-      ) : (
-        
-        /* LISTA DE RESULTADOS */
-        <div className="grid gap-4">
-          {prestadoresFiltrados.length > 0 ? (
-            prestadoresFiltrados.map((p) => (
-              <div key={p.id} className="border border-gray-100 p-5 rounded-2xl shadow-sm bg-white flex justify-between items-center hover:border-blue-300 transition-all">
-                <div className="flex flex-col">
-                  {/* Mostra a categoria se ela existir */}
-                  <span className="text-xs font-bold text-blue-500 uppercase tracking-wider mb-1 line-clamp-1">
-                    {p.categoria ? p.categoria : 'Serviço Geral'}
-                  </span>
-                  
-                  <h3 className="font-bold text-xl text-gray-900 leading-tight">{p.nome}</h3>
-                  
-                  <p className="text-gray-600 font-medium mt-1 text-sm">
-                    Zap: <span className="text-gray-900">{p.telefone}</span>
-                  </p>
-                </div>
-                
-                {/* Botão de WhatsApp direto com ícone */}
-                <a 
-                  href={`https://wa.me/55${p.telefone?.replace(/\D/g, '')}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="bg-green-500 text-white p-3 rounded-full hover:bg-green-600 transition-transform active:scale-95 flex items-center justify-center shadow-md flex-shrink-0"
-                >
-                  <Phone size={24} fill="currentColor" />
-                </a>
-              </div>
-            ))
-          ) : (
-            /* TELA VAZIA (Caso a busca não encontre nada) */
-            <div className="text-center p-12 bg-white rounded-2xl border border-dashed border-gray-300 flex flex-col items-center">
-              <span className="text-4xl mb-3">🕵️‍♂️</span>
-              <h3 className="text-lg font-bold text-gray-800">Nenhum vizinho indicou isso ainda</h3>
-              <p className="text-gray-500 text-sm mt-1">Que tal ser o primeiro a indicar?</p>
-              <Link href="/cadastrar" className="mt-4 text-blue-600 font-bold underline text-sm">
-                Fazer uma indicação
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
+      </div>
 
-      {/* Botão Flutuante de Adicionar (Estilo App Mobile) */}
-<Link 
-  href="/cadastrar" 
-  className="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-2xl hover:bg-blue-700 active:scale-90 transition-all flex items-center justify-center border-4 border-white"
->
-  <span className="mr-2 font-bold hidden sm:inline">Indicar Profissional</span>
-  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-</Link>
-
+      <BottomNav />
     </div>
   )
 }
