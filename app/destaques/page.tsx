@@ -1,17 +1,18 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
-import { Trophy, Star, MapPin } from 'lucide-react'
+import { ArrowLeft, Trophy, Star, MapPin } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import BottomNav from '../../components/BottomNav'
 import VoteButtons from '../../components/VoteButtons'
 
 export default function Destaques() {
+  const router = useRouter()
   const [destaques, setDestaques] = useState<any[]>([])
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
     const fetchRanking = async () => {
-      // Puxa prestadores e todos os votos simultaneamente
       const [resPrestadores, resVotos] = await Promise.all([
         supabase.from('prestadores').select('*'),
         supabase.from('votos').select('*')
@@ -20,7 +21,6 @@ export default function Destaques() {
       const prestadores = resPrestadores.data || []
       const votos = resVotos.data || []
 
-      // Calcula a nota/saldo de cada prestador
       const ranking = prestadores.map(p => {
         const votosDeste = votos.filter(v => v.prestador_id === p.id)
         const ups = votosDeste.filter(v => v.tipo === 'up').length
@@ -29,10 +29,7 @@ export default function Destaques() {
         return { ...p, saldo, ups }
       })
 
-      // Ordena: Primeiro quem tem maior saldo de votos. Desempate por quem tem mais ups.
       ranking.sort((a, b) => b.saldo - a.saldo || b.ups - a.ups)
-
-      // Salva apenas o Top 10 com saldo positivo ou neutro
       setDestaques(ranking.filter(p => p.ups > 0).slice(0, 10))
       setCarregando(false)
     }
@@ -43,58 +40,51 @@ export default function Destaques() {
   return (
     <div className="min-h-screen bg-gray-50 pb-28 font-sans">
       
-      {/* Header Estilizado */}
-      <div className="bg-gradient-to-b from-yellow-500 to-yellow-600 p-6 pt-12 pb-12 rounded-b-[40px] shadow-md text-center text-white relative overflow-hidden">
-        <Trophy size={120} className="absolute -right-6 -bottom-6 opacity-10" />
-        <h1 className="text-3xl font-black mb-2 tracking-tight flex justify-center items-center gap-2">
-          <Trophy size={28} className="fill-yellow-400" /> Destaques
-        </h1>
-        <p className="text-sm font-medium text-yellow-100">Os profissionais mais queridos do Mirante</p>
+      {/* Header Limpo e Simples */}
+      <div className="bg-white p-4 shadow-sm sticky top-0 z-20 border-b border-gray-100 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button onClick={() => router.back()} className="p-2 bg-gray-50 rounded-full text-blue-600 active:scale-95 transition-all">
+            <ArrowLeft size={20}/>
+          </button>
+          <h1 className="text-xl font-bold text-yellow-600 flex items-center gap-2">
+            <Trophy size={20} className="fill-yellow-500"/> Destaques
+          </h1>
+        </div>
       </div>
 
-      <div className="px-6 mt-8 space-y-4">
-        {carregando && <p className="text-center font-bold text-gray-400 animate-pulse">Calculando ranking...</p>}
+      <div className="p-4 space-y-3">
+        {carregando && <p className="text-center text-sm font-bold text-gray-400 mt-4 animate-pulse">Carregando ranking...</p>}
         
-        {!carregando && destaques.length === 0 && (
-          <div className="text-center bg-white p-8 rounded-[32px] border border-gray-100">
-            <p className="text-gray-400 font-medium">Nenhum voto registrado ainda. Seja o primeiro a apoiar um profissional!</p>
-          </div>
-        )}
-
         {destaques.map((p, index) => (
-          <div key={p.id} className="bg-white p-5 rounded-[32px] shadow-sm border border-gray-100 flex flex-col gap-4 relative overflow-hidden">
+          <div key={p.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
             
-            {/* Tag de Posição (1º, 2º, 3º...) */}
-            <div className={`absolute top-0 right-0 w-12 h-12 flex items-center justify-center font-black text-lg rounded-bl-[32px]
-              ${index === 0 ? 'bg-yellow-400 text-yellow-900' : 
-                index === 1 ? 'bg-gray-300 text-gray-800' : 
-                index === 2 ? 'bg-orange-300 text-orange-900' : 
+            {/* Tag de Posição Discreta */}
+            <div className={`absolute top-0 right-0 px-3 py-1 text-xs font-bold rounded-bl-xl
+              ${index === 0 ? 'bg-yellow-100 text-yellow-700' : 
+                index === 1 ? 'bg-gray-100 text-gray-600' : 
+                index === 2 ? 'bg-orange-100 text-orange-700' : 
                 'bg-gray-50 text-gray-400'}`}>
               #{index + 1}
             </div>
 
-            <div className="flex items-center gap-4 pr-10">
-              <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 font-bold text-xl uppercase shrink-0">
+            <div className="flex items-center gap-3 mb-3 pr-8">
+              <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 font-bold text-lg uppercase shrink-0">
                 {p.nome.charAt(0)}
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-gray-800 leading-tight">{p.nome}</h3>
-                <div className="flex items-center gap-1 text-yellow-500 my-1">
+                <h3 className="font-bold text-gray-800 text-sm">{p.nome}</h3>
+                <div className="flex items-center gap-1 text-yellow-500 my-0.5">
                   <Star size={12} className="fill-yellow-500" />
                   <span className="text-xs font-bold">{p.avaliacao || '5.0'}</span>
                   <span className="text-gray-300 mx-1">•</span>
                   <span className="text-gray-400 text-[10px] font-bold uppercase">{p.categoria}</span>
                 </div>
-                <div className="flex items-center gap-1 text-gray-400">
-                  <MapPin size={12} />
-                  <span className="text-[11px] truncate">{p.local || 'Condomínio Mirante'}</span>
-                </div>
               </div>
             </div>
 
-            <div className="border-t border-gray-50 pt-3 flex justify-between items-center">
+            <div className="border-t border-gray-50 pt-2 flex justify-between items-center">
               <VoteButtons prestadorId={p.id} />
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+              <span className="text-[10px] text-gray-500 font-bold uppercase">
                 Score: {p.saldo}
               </span>
             </div>

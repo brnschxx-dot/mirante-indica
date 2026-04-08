@@ -1,81 +1,69 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { supabase } from '../../lib/supabaseClient' 
+import { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabaseClient'
+import { ArrowLeft, Star, MapPin } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { ClipboardPlus, Search, LogOut } from 'lucide-react'
 import BottomNav from '../../components/BottomNav'
+import VoteButtons from '../../components/VoteButtons'
 
-export default function Dashboard() {
-  const [carregando, setCarregando] = useState(true)
+export default function Indicacoes() {
   const router = useRouter()
+  const [prestadores, setPrestadores] = useState<any[]>([])
 
   useEffect(() => {
-    const checarSessao = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.replace('/login')
-      } else {
-        setCarregando(false)
-      }
+    const fetchPrestadores = async () => {
+      const { data } = await supabase
+        .from('prestadores')
+        .select('*')
+        .order('id', { ascending: false })
+      if (data) setPrestadores(data)
     }
-    checarSessao()
-  }, [router])
-
-  if (carregando) return (
-    <div className="flex flex-col justify-center items-center min-h-screen bg-gray-50 text-blue-900 font-bold animate-pulse">
-      Verificando acesso...
-    </div>
-  )
+    fetchPrestadores()
+  }, [])
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-gray-50 pb-28 font-sans">
       
-      {/* Conteúdo Centralizado */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 pb-24">
-        
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-extrabold text-blue-900 tracking-tight">
-            Olá! 👋
-          </h2>
-          <p className="text-gray-500 mt-2 font-medium uppercase text-[10px] tracking-widest">
-            O que você deseja fazer hoje?
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-lg">
-          
-          {/* Card: Quero Indicar */}
-          <Link href="/cadastrar" className="group">
-            <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 flex flex-col items-center transition-all group-hover:shadow-xl group-hover:-translate-y-1 active:scale-95">
-              <div className="w-24 h-24 rounded-full bg-green-50 text-green-500 flex items-center justify-center mb-4 group-hover:bg-green-500 group-hover:text-white transition-colors">
-                <ClipboardPlus size={40} />
-              </div>
-              <span className="font-bold text-gray-800 text-lg">Quero indicar</span>
-              <p className="text-gray-400 text-xs mt-1 text-center">Ajude a comunidade compartilhando um serviço</p>
-            </div>
-          </Link>
-
-          {/* Card: Quero Indicações */}
-          <Link href="/" className="group">
-            <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 flex flex-col items-center transition-all group-hover:shadow-xl group-hover:-translate-y-1 active:scale-95">
-              <div className="w-24 h-24 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                <Search size={40} />
-              </div>
-              <span className="font-bold text-gray-800 text-lg">Indicações</span>
-              <p className="text-gray-400 text-xs mt-1 text-center">Encontre os melhores profissionais do Mirante</p>
-            </div>
-          </Link>
-
-        </div>
-
-        {/* Botão Sair - Mais discreto e elegante */}
-        <button 
-          onClick={() => { supabase.auth.signOut(); router.push('/login'); }} 
-          className="mt-12 flex items-center gap-2 text-gray-400 hover:text-red-500 font-bold text-xs uppercase tracking-widest transition-colors"
-        >
-          <LogOut size={16} /> Sair do Sistema
+      {/* Header com Botão de Voltar */}
+      <div className="bg-white p-4 shadow-sm sticky top-0 z-20 border-b border-gray-100 flex items-center gap-3">
+        <button onClick={() => router.back()} className="p-2 bg-gray-50 rounded-full text-blue-600 active:scale-95 transition-all">
+          <ArrowLeft size={20}/>
         </button>
+        <h1 className="text-xl font-bold text-blue-900">Indicações</h1>
+      </div>
+
+      <div className="p-4 space-y-3">
+        {prestadores.map((p) => (
+          // Card Compacto (padding 4, rounded-2xl em vez de 32px)
+          <div key={p.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+            
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 font-bold text-lg uppercase shrink-0">
+                {p.nome.charAt(0)}
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-800 text-sm">{p.nome}</h3>
+                <div className="flex items-center gap-1 text-yellow-500 my-0.5">
+                  <Star size={12} className="fill-yellow-500" />
+                  <span className="text-xs font-bold">{p.avaliacao || '5.0'}</span>
+                  <span className="text-gray-300 mx-1">•</span>
+                  <span className="text-gray-400 text-[10px] font-bold uppercase">{p.categoria}</span>
+                </div>
+                <div className="flex items-center gap-1 text-gray-400">
+                  <MapPin size={12} />
+                  <span className="text-[10px] truncate">{p.local || 'Condomínio Mirante'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-50 pt-2 flex justify-between items-center">
+              <VoteButtons prestadorId={p.id} />
+              <span className="text-[9px] text-gray-400 font-bold uppercase">
+                Por: {p.indicado_por || 'Vizinho'}
+              </span>
+            </div>
+          </div>
+        ))}
       </div>
 
       <BottomNav />
