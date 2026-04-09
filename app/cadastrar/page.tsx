@@ -72,13 +72,17 @@ export default function CadastrarPage() {
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `fotos/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { data, error: uploadError } = await supabase.storage
         .from('prestadores-midia')
         .upload(filePath, file);
 
-      if (!uploadError) {
-        const { data } = supabase.storage.from('prestadores-midia').getPublicUrl(filePath);
-        urlsFotos.push(data.publicUrl);
+      if (uploadError) {
+        // ESSAS DUAS LINHAS VÃO TE MOSTRAR O ERRO
+        console.error("Erro no Supabase Storage:", uploadError);
+        alert("Erro ao subir a foto: " + uploadError.message); 
+      } else {
+        const { data: urlData } = supabase.storage.from('prestadores-midia').getPublicUrl(filePath);
+        urlsFotos.push(urlData.publicUrl);
       }
     }
 
