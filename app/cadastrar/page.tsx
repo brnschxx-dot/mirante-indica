@@ -4,7 +4,6 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { EIXOS, EIXOS_CATEGORIAS } from "@/lib/categorias";
 import { useRouter } from "next/navigation";
-import ReactInputMask from "react-input-mask";
 
 export default function CadastrarPage() {
   const router = useRouter();
@@ -24,6 +23,23 @@ export default function CadastrarPage() {
 
   const tagsDisponiveis = ["Pontual", "Preço Justo", "Limpo", "Rápido", "Educado"];
 
+  // Função para formatar o telefone automaticamente (Máscara Manual)
+  const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let valor = e.target.value.replace(/\D/g, ""); // Remove tudo que não é número
+    if (valor.length > 11) valor = valor.slice(0, 11); // Limita a 11 dígitos
+
+    // Aplica a máscara (11) 99999-9999
+    if (valor.length > 7) {
+      valor = `(${valor.slice(0, 2)}) ${valor.slice(2, 7)}-${valor.slice(7)}`;
+    } else if (valor.length > 2) {
+      valor = `(${valor.slice(0, 2)}) ${valor.slice(2)}`;
+    } else if (valor.length > 0) {
+      valor = `(${valor}`;
+    }
+
+    setFormData({ ...formData, telefone: valor });
+  };
+
   const toggleTag = (tag: string) => {
     setTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
@@ -33,7 +49,6 @@ export default function CadastrarPage() {
     if (nota === 0) return alert("Por favor, selecione uma avaliação.");
     
     setLoading(true);
-    // Concatenamos as tags na descrição para visualização no card
     const descricaoFinal = tags.length > 0 
       ? `[${tags.join(" • ")}] ${formData.descricao}` 
       : formData.descricao;
@@ -66,26 +81,26 @@ export default function CadastrarPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           
-          {/* 1. Nome e Contato com Máscara */}
+          {/* 1. Nome e Contato */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Nome *</label>
               <input
                 required
-                className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm"
+                className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
                 placeholder="Ex: João"
                 onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
               />
             </div>
             <div>
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">WhatsApp *</label>
-              <ReactInputMask
-                mask="(99) 99999-9999"
+              <input
                 required
-                className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
-                placeholder="(00) 00000-0000"
+                type="tel"
                 value={formData.telefone}
-                onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                onChange={handleTelefoneChange}
+                className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                placeholder="(11) 99999-9999"
               />
             </div>
           </div>
@@ -102,7 +117,7 @@ export default function CadastrarPage() {
 
           {/* 3. Categoria e Subcategoria */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="relative">
+            <div>
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Categoria *</label>
               <select
                 required
@@ -139,12 +154,13 @@ export default function CadastrarPage() {
               <input
                 className="w-full pl-10 pr-4 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-pink-500 outline-none text-sm"
                 placeholder="perfil"
+                value={formData.instagram}
                 onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
               />
             </div>
           </div>
 
-          {/* 5. Tags de Qualidade (Diferencial) */}
+          {/* 5. Tags de Qualidade */}
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 ml-1">Destaques do Serviço</label>
             <div className="flex flex-wrap gap-2">
@@ -155,8 +171,8 @@ export default function CadastrarPage() {
                   onClick={() => toggleTag(tag)}
                   className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
                     tags.includes(tag) 
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100 scale-105' 
-                    : 'bg-white text-slate-400 border border-slate-200 hover:border-indigo-300'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' 
+                    : 'bg-white text-slate-400 border border-slate-200'
                   }`}
                 >
                   {tag}
@@ -170,12 +186,7 @@ export default function CadastrarPage() {
             <label className="block text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-3">Sua Avaliação *</label>
             <div className="flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => setNota(star)}
-                  className="transition-all hover:scale-110"
-                >
+                <button key={star} type="button" onClick={() => setNota(star)}>
                   <svg 
                     className={`w-10 h-10 ${star <= nota ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`} 
                     fill={star <= nota ? "currentColor" : "none"}
@@ -193,30 +204,28 @@ export default function CadastrarPage() {
           <div>
             <div className="flex justify-between items-end mb-2 ml-1">
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Seu Comentário *</label>
-              <span className={`text-[10px] font-bold ${formData.descricao.length > 180 ? 'text-red-500' : 'text-slate-400'}`}>
+              <span className={`text-[10px] font-bold ${formData.descricao.length >= 200 ? 'text-red-500' : 'text-slate-400'}`}>
                 {formData.descricao.length}/200
               </span>
             </div>
             <textarea
               required
               maxLength={200}
-              rows={4}
               className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none text-sm"
-              placeholder="Descreva o serviço em poucas palavras..."
+              rows={4}
+              placeholder="Descreva o serviço..."
+              value={formData.descricao}
               onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
             />
           </div>
 
-          {/* Botões */}
-          <div className="pt-4 flex gap-3">
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50"
-            >
-              {loading ? "Processando..." : "Publicar Indicação"}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50"
+          >
+            {loading ? "Processando..." : "Publicar Indicação"}
+          </button>
 
         </form>
       </div>
