@@ -1,106 +1,95 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabaseClient'
-import { ArrowLeft, Star, MapPin } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import BottomNav from '../../components/BottomNav'
-import VoteButtons from '../../components/VoteButtons'
+// app/indicacoes/page.tsx
+"use client";
 
-// Isso garante que o Next.js sempre busque dados novos do banco
-export const dynamic = 'force-dynamic'
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient"; // Certifique-se de que o caminho está correto
+import FiltroEixo from "@/components/FiltroEixo";
 
-export default function Indicacoes() {
-  const router = useRouter()
-  const [prestadores, setPrestadores] = useState<any[]>([])
-  const [carregando, setCarregando] = useState(true)
+export default function IndicacoesPage() {
+  const [prestadores, setPrestadores] = useState<any[]>([]);
+  const [eixoSelecionado, setEixoSelecionado] = useState<string>("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPrestadores = async () => {
-      setCarregando(true)
-      try {
-        // Chamada ao banco de dados
-        const { data, error } = await supabase
-  .from('prestadores')
-  .select('*')
-  .order('id', { ascending: false })
+    async function fetchPrestadores() {
+      setLoading(true);
 
-        if (error) {
-          // Se houver erro de permissão ou conexão, avisa na tela
-          alert("Erro do Supabase: " + error.message)
-          console.error("Detalhes do erro:", error)
-        } else {
-          console.log("Status da requisição:", status)
-          console.log("Dados recebidos:", data)
-          setPrestadores(data || [])
-        }
-      } catch (err) {
-        console.error("Erro inesperado na aplicação:", err)
-      } finally {
-        setCarregando(false)
+      // Inicia a query apontando para a sua tabela
+      let query = supabase
+        .from("prestadores")
+        .select("*")
+        .order("id", { ascending: false });
+
+      // Se o usuário selecionou um eixo específico, adiciona o filtro na query
+      if (eixoSelecionado !== "") {
+        query = query.eq("eixo", eixoSelecionado);
       }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Erro ao buscar prestadores:", error);
+      } else {
+        setPrestadores(data || []);
+      }
+
+      setLoading(false);
     }
 
-    fetchPrestadores()
-  }, [])
+    fetchPrestadores();
+  }, [eixoSelecionado]); // O array de dependências aciona o useEffect toda vez que o filtro muda
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28 font-sans">
-      
-      {/* Header */}
-      <div className="bg-white p-4 shadow-sm sticky top-0 z-20 border-b border-gray-100 flex items-center gap-3">
-        <button 
-          onClick={() => router.back()} 
-          className="p-2 bg-gray-50 rounded-full text-blue-600 active:scale-95 transition-all"
-        >
-          <ArrowLeft size={20}/>
-        </button>
-        <h1 className="text-xl font-bold text-blue-900">Indicações</h1>
-      </div>
+    <div className="max-w-4xl mx-auto p-4 md:p-6">
+      <h1 className="text-2xl font-bold mb-6 text-gray-800">Guia Mirante Indica</h1>
 
-      <div className="p-4 space-y-3">
-        {carregando ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-gray-400 font-bold text-sm">Carregando indicações...</p>
-          </div>
-        ) : prestadores.length > 0 ? (
-          prestadores.map((p) => (
-            <div key={p.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-2">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 font-bold text-lg uppercase shrink-0">
-                  {p.nome.charAt(0)}
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-gray-800 text-sm">{p.nome}</h3>
-                  <div className="flex items-center gap-1 text-yellow-500 my-0.5">
-                    <Star size={12} className="fill-yellow-500" />
-                    <span className="text-xs font-bold">{p.avaliacao || '5.0'}</span>
-                    <span className="text-gray-300 mx-1">•</span>
-                    <span className="text-gray-400 text-[10px] font-bold uppercase">{p.categoria}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-gray-400">
-                    <MapPin size={12} />
-                    <span className="text-[10px] truncate">{p.local || 'Condomínio Mirante'}</span>
-                  </div>
-                </div>
-              </div>
+      {/* Renderiza o componente de filtro */}
+      <FiltroEixo 
+        eixoSelecionado={eixoSelecionado} 
+        onSelecionarEixo={setEixoSelecionado} 
+      />
 
-              <div className="border-t border-gray-50 pt-2 flex justify-between items-center">
-                <VoteButtons prestadorId={p.id} />
-                <span className="text-[9px] text-gray-400 font-bold uppercase">
-                  Por: {p.indicado_por || 'Vizinho'}
-                </span>
-              </div>
+      {/* Renderização Condicional da Lista */}
+      {loading ? (
+        <div className="flex justify-center items-center py-10">
+          <p className="text-gray-500 font-medium animate-pulse">Carregando indicações...</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {prestadores.length === 0 ? (
+            <div className="col-span-full text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+              <p className="text-gray-500">Nenhum prestador encontrado para esta categoria.</p>
             </div>
-          ))
-        ) : (
-          <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
-            <p className="text-gray-400 font-bold text-sm">Nenhuma indicação encontrada no banco.</p>
-          </div>
-        )}
-      </div>
-
-      <BottomNav />
+          ) : (
+            prestadores.map((prestador) => (
+              <div key={prestador.id} className="border p-4 rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow">
+                <h2 className="font-bold text-lg text-gray-900">{prestador.nome}</h2>
+                
+                {/* Exibição das categorias como "Badges" (etiquetas) */}
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {prestador.eixo && (
+                    <span className="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full font-medium">
+                      {prestador.eixo}
+                    </span>
+                  )}
+                  {prestador.subcategoria && (
+                    <span className="bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-full border border-gray-200">
+                      {prestador.subcategoria}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Aqui você pode adicionar as outras variáveis do seu banco, como telefone, descrição, etc. */}
+                {prestador.telefone && (
+                  <p className="mt-3 text-sm text-gray-600">
+                    <strong>Contato:</strong> {prestador.telefone}
+                  </p>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
-  )
+  );
 }
