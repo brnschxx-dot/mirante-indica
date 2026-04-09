@@ -10,12 +10,11 @@ interface Prestador {
   nome: string;
   eixo: string;
   subcategoria: string;
-  descricao: string;
+  descricao: string; // Este será o "comentário destaque" de quem cadastrou
   telefone: string;
   avaliacao: number;
   instagram?: string;
   endereco?: string;
-  comentario_destaque?: string; // Simulação de um comentário real
 }
 
 export default function IndicacoesPage() {
@@ -53,8 +52,8 @@ export default function IndicacoesPage() {
   return (
     <main className="min-h-screen bg-[#F8FAFC] pb-24 font-sans text-slate-900">
       
-      {/* Header Premium */}
-      <div className="bg-white/80 backdrop-blur-md sticky top-0 z-20 border-b border-slate-100 shadow-sm">
+      {/* Header Premium com Blur */}
+      <div className="bg-white/90 backdrop-blur-sm sticky top-0 z-20 border-b border-slate-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-black text-slate-900 tracking-tighter flex items-center gap-2">
@@ -83,6 +82,7 @@ export default function IndicacoesPage() {
               />
             </div>
 
+            {/* Filtros em Pílula */}
             <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
               <div className="relative flex-1 min-w-[140px]">
                 <select 
@@ -136,27 +136,24 @@ export default function IndicacoesPage() {
                   </span>
                 </div>
 
-                <h3 className="text-2xl font-bold text-slate-900 tracking-tight mb-2">{item.nome}</h3>
-                <p className="text-slate-500 text-sm leading-relaxed mb-6 line-clamp-2">
-                  {item.descricao}
-                </p>
+                <h3 className="text-2xl font-bold text-slate-900 tracking-tight mb-6 transition-colors group-hover:text-indigo-600">{item.nome}</h3>
 
-                {/* Bloco de Comentário Destaque */}
-                <div className="bg-slate-50 border border-slate-100 rounded-3xl p-4 mb-6 relative">
+                {/* Bloco de Comentário Destaque (A descrição de quem cadastrou) */}
+                <div className="bg-slate-50 border border-slate-100 rounded-3xl p-5 mb-6 relative">
                   <div className="flex items-start gap-3">
-                    <span className="text-indigo-400 text-2xl font-serif">“</span>
-                    <p className="text-slate-600 text-[13px] italic font-medium leading-snug">
-                      {item.comentario_destaque || "Atendimento rápido e resolveu meu problema com perfeição. Recomendo!"}
+                    <span className="text-indigo-300 text-3xl font-serif">“</span>
+                    <p className="text-slate-700 text-[13px] italic font-medium leading-relaxed">
+                      {item.descricao || "Prestador recomendado pela comunidade do Mirante Indica."}
                     </p>
                   </div>
                 </div>
 
                 {/* Estrelas e Avaliação */}
-                <div className="flex items-center gap-2 mb-8">
+                <div className="flex items-center gap-2 mb-10 pt-2 border-t border-dashed border-slate-100">
                   <div className="flex gap-0.5">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <svg key={star} className={`w-5 h-5 ${star <= Math.floor(item.avaliacao || 5) ? 'text-amber-400 fill-amber-400' : 'text-slate-200 fill-slate-200'}`} viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        <path d="M9.049 2.927p.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                     ))}
                   </div>
@@ -165,6 +162,7 @@ export default function IndicacoesPage() {
 
                 {/* Botões Redondos Dinâmicos */}
                 <div className="flex justify-between items-center gap-4">
+                  
                   {/* WhatsApp */}
                   <a 
                     href={item.telefone ? `https://wa.me/55${item.telefone.replace(/\D/g,'')}` : "#"}
@@ -177,7 +175,7 @@ export default function IndicacoesPage() {
                     </svg>
                   </a>
 
-                  {/* Instagram */}
+                  {/* Instagram - Mantendo o gradiente vibrante */}
                   <a 
                     href={item.instagram ? `https://instagram.com/${item.instagram.replace('@','')}` : "#"}
                     onClick={!item.instagram ? handleNaoInformado : undefined}
@@ -191,12 +189,12 @@ export default function IndicacoesPage() {
                     </svg>
                   </a>
 
-                  {/* Maps */}
+                  {/* Google Maps - Novo Gradiente Vibrante de 2026 */}
                   <a 
                     href={item.endereco ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.endereco)}` : "#"}
                     onClick={!item.endereco ? handleNaoInformado : undefined}
                     target={item.endereco ? "_blank" : "_self"}
-                    className={`w-14 h-14 flex items-center justify-center rounded-full border-2 transition-all duration-300 active:scale-90 ${item.endereco ? 'border-blue-500 bg-white text-blue-500 hover:bg-blue-500 hover:text-white active:bg-blue-600' : 'border-slate-100 bg-slate-50 text-slate-300'}`}
+                    className={`w-14 h-14 flex items-center justify-center rounded-full border-2 transition-all duration-300 active:scale-90 ${item.endereco ? 'border-blue-500 bg-white text-blue-500 hover:bg-gradient-to-br hover:from-blue-500 hover:via-green-500 hover:via-yellow-400 hover:to-red-500 hover:text-white hover:border-transparent' : 'border-slate-100 bg-slate-50 text-slate-300'}`}
                   >
                     <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -213,7 +211,7 @@ export default function IndicacoesPage() {
 
       <Link 
         href="/cadastrar" 
-        className="fixed bottom-10 right-6 bg-indigo-600 text-white pl-5 pr-6 py-4 rounded-full shadow-2xl shadow-indigo-200 flex items-center gap-3 hover:scale-105 hover:bg-indigo-700 active:scale-95 transition-all z-30"
+        className="fixed bottom-10 right-6 bg-indigo-600 text-white pl-5 pr-6 py-4 rounded-full shadow-2xl shadow-indigo-200 flex items-center gap-3 hover:scale-105 hover:bg-indigo-700 active:scale-95 transition-all z-30 ring-2 ring-white"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
