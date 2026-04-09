@@ -12,7 +12,9 @@ export default function CadastrarPage() {
   const [nota, setNota] = useState(0);
   const [tags, setTags] = useState<string[]>([]);
   
-  // Estados para múltiplas fotos
+  // ESTADO DE DUPLICIDADE
+  const [duplicado, setDuplicado] = useState(false);
+
   const [fotosArquivos, setFotosArquivos] = useState<File[]>([]);
   const [fotosPreviews, setFotosPreviews] = useState<string[]>([]);
 
@@ -30,26 +32,44 @@ export default function CadastrarPage() {
 
   const tagsDisponiveis = ["Pontual", "Preço Justo", "Limpo", "Rápido", "Educado"];
 
+  // FUNÇÃO PARA CHECAR DUPLICADOS
+  const verificarDuplicado = async (tel: string) => {
+    if (tel.length < 10) return;
+
+    const { data } = await supabase
+      .from("prestadores")
+      .select("nome")
+      .eq("telefone", tel)
+      .maybeSingle();
+
+    if (data) {
+      setDuplicado(true);
+      alert(`Opa! O prestador "${data.nome}" já está cadastrado com este número.`);
+    } else {
+      setDuplicado(false);
+    }
+  };
+
   const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, "").slice(0, 11);
     if (v.length > 7) v = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
     else if (v.length > 2) v = `(${v.slice(0, 2)}) ${v.slice(2)}`;
     else if (v.length > 0) v = `(${v}`;
     setFormData({ ...formData, telefone: v });
+    
+    // Se ele voltar a digitar, resetamos o aviso de erro até ele sair do campo de novo
+    if (duplicado) setDuplicado(false);
   };
 
+  // ... (manter handleFotoChange e removerFoto iguais)
   const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    
     if (fotosArquivos.length + files.length > 5) {
       alert("Você pode enviar no máximo 5 fotos.");
       return;
     }
-
     const novosArquivos = [...fotosArquivos, ...files];
     setFotosArquivos(novosArquivos);
-
-    // Gerar previews
     const novosPreviews = files.map(file => URL.createObjectURL(file));
     setFotosPreviews([...fotosPreviews, ...novosPreviews]);
   };
@@ -61,12 +81,12 @@ export default function CadastrarPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (duplicado) return alert("Este número já está cadastrado.");
     if (nota === 0) return alert("Por favor, selecione uma avaliação.");
     setLoading(true);
 
     const urlsFotos: string[] = [];
 
-    // 1. Upload de múltiplas fotos
     for (const file of fotosArquivos) {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random()}.${fileExt}`;
@@ -76,11 +96,7 @@ export default function CadastrarPage() {
         .from('prestadores-midia')
         .upload(filePath, file);
 
-      if (uploadError) {
-        // ESSAS DUAS LINHAS VÃO TE MOSTRAR O ERRO
-        console.error("Erro no Supabase Storage:", uploadError);
-        alert("Erro ao subir a foto: " + uploadError.message); 
-      } else {
+      if (!uploadError) {
         const { data: urlData } = supabase.storage.from('prestadores-midia').getPublicUrl(filePath);
         urlsFotos.push(urlData.publicUrl);
       }
@@ -90,7 +106,6 @@ export default function CadastrarPage() {
       ? `[${tags.join(" • ")}] ${formData.comentario}` 
       : formData.comentario;
 
-    // 2. Insert no banco (foto_url salva como string separada por vírgula ou JSON)
     const { error } = await supabase.from("prestadores").insert([
       {
         nome: formData.nome,
@@ -105,7 +120,7 @@ export default function CadastrarPage() {
         comentario: formData.comentario,
         descricao: descricaoFinal,
         indicado_por: formData.indicado_por,
-        foto_url: urlsFotos.join(","), // Salva as URLs separadas por vírgula
+        foto_url: urlsFotos.join(","),
       },
     ]);
 
@@ -117,14 +132,12 @@ export default function CadastrarPage() {
   return (
     <main className="min-h-screen bg-[#F8FAFC] p-6 pb-24 font-sans text-slate-900">
       <div className="max-w-md mx-auto">
-        
         <header className="mb-8 text-center">
           <h1 className="text-3xl font-black tracking-tighter italic">Nova <span className="text-indigo-600 uppercase">Indicação</span></h1>
           <p className="text-slate-500 text-sm mt-1 font-medium">Preencha os dados do prestador</p>
         </header>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Nome *</label>
@@ -132,10 +145,19 @@ export default function CadastrarPage() {
             </div>
             <div>
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">WhatsApp *</label>
-              <input required type="tel" value={formData.telefone} onChange={handleTelefoneChange} className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm" placeholder="(11) 99999-9999" />
+              <input 
+                required 
+                type="tel" 
+                value={formData.telefone} 
+                onChange={handleTelefoneChange}
+                onBlur={(e) => verificarDuplicado(e.target.value)} // <--- CHECAGEM AQUI
+                className={`w-full p-4 bg-white border rounded-2xl shadow-sm focus:ring-2 outline-none text-sm transition-all ${duplicado ? 'border-red-500 ring-red-100' : 'border-slate-200 focus:ring-indigo-500'}`} 
+                placeholder="(11) 99999-9999" 
+              />
             </div>
           </div>
 
+          {/* ... Localização, Categoria, Instagram (Mantenha igual ao seu código) ... */}
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Localização</label>
             <input className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm" placeholder="Bairro ou região de Jundiaí" onChange={(e) => setFormData({ ...formData, local: e.target.value })} />
@@ -158,21 +180,21 @@ export default function CadastrarPage() {
             </div>
           </div>
 
-                  <div>
-          <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Instagram do Prestador</label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">@</span>
-            <input 
-              type="text" 
-              className="w-full p-4 pl-8 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm transition-all" 
-              placeholder="usuario.do.insta" 
-              value={formData.instagram}
-              onChange={(e) => setFormData({ ...formData, instagram: e.target.value.replace("@", "").toLowerCase().trim() })} 
-            />
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Instagram do Prestador</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">@</span>
+              <input 
+                type="text" 
+                className="w-full p-4 pl-8 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm transition-all" 
+                placeholder="usuario.do.insta" 
+                value={formData.instagram}
+                onChange={(e) => setFormData({ ...formData, instagram: e.target.value.replace("@", "").toLowerCase().trim() })} 
+              />
+            </div>
           </div>
-          <p className="text-[9px] text-slate-400 mt-2 ml-1 font-medium italic">Opcional: Ajuda a validar o trabalho do profissional.</p>
-        </div>
 
+          {/* ... Tags e Avaliação (Mantenha igual ao seu código) ... */}
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 ml-1">Destaques</label>
             <div className="flex flex-wrap gap-2">
@@ -195,7 +217,6 @@ export default function CadastrarPage() {
             </div>
           </div>
 
-          {/* COMENTÁRIO COM LIMITE DE 100 CARACTERES */}
           <div>
             <div className="flex justify-between items-end mb-2 ml-1">
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Comentário *</label>
@@ -204,7 +225,6 @@ export default function CadastrarPage() {
             <textarea required maxLength={100} className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none text-sm" rows={3} placeholder="Resuma sua experiência..." onChange={(e) => setFormData({ ...formData, comentario: e.target.value })} />
           </div>
 
-          {/* SEÇÃO DE FOTOS (MÁXIMO 5) ABAIXO DOS COMENTÁRIOS */}
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 ml-1">Fotos / Comprovantes (Máx 5)</label>
             <div className="flex flex-wrap gap-3">
@@ -216,7 +236,6 @@ export default function CadastrarPage() {
                   </button>
                 </div>
               ))}
-              
               {fotosPreviews.length < 5 && (
                 <button type="button" onClick={() => fileInputRef.current?.click()} className="w-16 h-16 rounded-xl bg-white border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300 hover:border-indigo-400 hover:text-indigo-400 transition-all">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
@@ -226,10 +245,13 @@ export default function CadastrarPage() {
             <input type="file" multiple ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFotoChange} />
           </div>
 
-          <button type="submit" disabled={loading} className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50">
-            {loading ? "Publicando..." : "Finalizar Indicação"}
+          <button 
+            type="submit" 
+            disabled={loading || duplicado} 
+            className={`w-full py-5 rounded-3xl font-black uppercase tracking-widest shadow-xl transition-all active:scale-95 disabled:opacity-50 ${duplicado ? 'bg-slate-200 text-slate-400 shadow-none' : 'bg-indigo-600 text-white shadow-indigo-100 hover:bg-indigo-700'}`}
+          >
+            {loading ? "Publicando..." : duplicado ? "Número já cadastrado" : "Finalizar Indicação"}
           </button>
-
         </form>
       </div>
     </main>
