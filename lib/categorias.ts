@@ -1,5 +1,3 @@
-// lib/categorias.ts
-
 export const EIXOS_CATEGORIAS: Record<string, string[]> = {
   "Gastronomia": [
     "Pizza", "Hambúrgueres e Lanches", "Comida Japonesa", 
@@ -22,5 +20,4 @@ export const EIXOS_CATEGORIAS: Record<string, string[]> = {
   "Profissional": ["Contabilidade / IRPF", "Advocacia", "Seguros"]
 };
 
-// Exporta apenas as chaves (os Eixos) para facilitar o mapeamento do Select
 export const EIXOS = Object.keys(EIXOS_CATEGORIAS);
