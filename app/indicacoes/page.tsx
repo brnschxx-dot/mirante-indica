@@ -45,7 +45,7 @@ export default function IndicacoesPage() {
   }, [eixo, sub, busca]);
 
   return (
-    <main className="min-h-screen bg-slate-50 pb-24 font-sans">
+    <main className="min-h-screen bg-slate-50 pb-24 font-sans text-slate-900">
       
       {/* Header Estilo App */}
       <div className="bg-white sticky top-0 z-20 border-b border-slate-100 shadow-sm">
@@ -64,7 +64,7 @@ export default function IndicacoesPage() {
           <div className="space-y-3">
             {/* Barra de Busca com Ícone */}
             <div className="relative group">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
@@ -72,35 +72,48 @@ export default function IndicacoesPage() {
               <input
                 type="text"
                 placeholder="Ex: Pintor, Loja de tintas..."
-                className="w-full pl-11 pr-4 py-3 bg-slate-100 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder-slate-400"
+                className="w-full pl-12 pr-4 py-3 bg-slate-100 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder-slate-400"
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
               />
             </div>
 
-            {/* Filtros em Chips/Selects */}
+            {/* Filtros em Pílulas (Totalmente Redondos) */}
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <select 
-                  className="w-full appearance-none bg-indigo-50 text-indigo-700 font-bold py-2.5 px-4 rounded-xl text-xs outline-none"
+                  className="w-full appearance-none bg-indigo-50 text-indigo-700 font-bold py-2.5 px-5 rounded-full text-[11px] outline-none border-none cursor-pointer hover:bg-indigo-100 transition-colors"
                   value={eixo}
                   onChange={(e) => { setEixo(e.target.value); setSub(""); }}
                 >
                   <option value="">Todas Categorias</option>
                   {EIXOS.map(e => <option key={e} value={e}>{e}</option>)}
                 </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-400">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
               </div>
+
               {eixo && (
-                <select 
-                  className="flex-1 appearance-none bg-slate-100 text-slate-600 font-bold py-2.5 px-4 rounded-xl text-xs outline-none animate-in fade-in slide-in-from-right-4"
-                  value={sub}
-                  onChange={(e) => setSub(e.target.value)}
-                >
-                  <option value="">Especialidade</option>
-                  {(EIXOS_CATEGORIAS[eixo as keyof typeof EIXOS_CATEGORIAS] || []).map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
+                <div className="relative flex-1 animate-in fade-in slide-in-from-right-4">
+                  <select 
+                    className="w-full appearance-none bg-slate-100 text-slate-600 font-bold py-2.5 px-5 rounded-full text-[11px] outline-none border-none cursor-pointer hover:bg-slate-200 transition-colors"
+                    value={sub}
+                    onChange={(e) => setSub(e.target.value)}
+                  >
+                    <option value="">Especialidade</option>
+                    {(EIXOS_CATEGORIAS[eixo as keyof typeof EIXOS_CATEGORIAS] || []).map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -111,18 +124,19 @@ export default function IndicacoesPage() {
       <div className="max-w-2xl mx-auto px-4 mt-6">
         {loading ? (
           <div className="space-y-4">
-            {[1, 2, 3].map(i => <div key={i} className="h-40 bg-slate-200 animate-pulse rounded-3xl" />)}
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-44 bg-slate-200 animate-pulse rounded-[2rem]" />
+            ))}
           </div>
         ) : (
           <div className="space-y-4">
             {prestadores.map((item) => (
-              <div key={item.id} className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all">
+              <div key={item.id} className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all group">
                 
                 <div className="flex justify-between items-start">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
-                        {/* Ícone Genérico de Serviço - Você pode trocar por ícones específicos via lógica depois */}
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
@@ -131,7 +145,9 @@ export default function IndicacoesPage() {
                         {item.subcategoria || item.eixo}
                       </span>
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900 leading-tight">{item.nome}</h3>
+                    <h3 className="text-xl font-bold text-slate-900 leading-tight group-hover:text-indigo-600 transition-colors">
+                      {item.nome}
+                    </h3>
                     <p className="text-slate-500 text-sm font-medium flex items-center gap-1">
                       <svg className="w-4 h-4 text-amber-400 fill-current" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -142,14 +158,15 @@ export default function IndicacoesPage() {
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-dashed border-slate-100">
-                  <p className="text-slate-600 text-sm leading-relaxed mb-6">
+                  <p className="text-slate-600 text-sm leading-relaxed mb-6 line-clamp-2">
                     {item.descricao}
                   </p>
                   
                   <div className="flex gap-3">
                     <a 
-                      href={`https://wa.me/55${item.telefone?.replace(/\D/g,'')}`}
+                      href={`https://wa.me/55${item.telefone?.replace(/\D/g,'') || ''}`}
                       target="_blank"
+                      rel="noopener noreferrer"
                       className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-emerald-100"
                     >
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -162,7 +179,8 @@ export default function IndicacoesPage() {
                       <a 
                         href={`https://instagram.com/${item.instagram.replace('@','')}`}
                         target="_blank"
-                        className="w-[56px] h-[56px] bg-slate-900 text-white rounded-2xl flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-slate-200"
+                        rel="noopener noreferrer"
+                        className="w-[56px] h-[56px] bg-slate-900 text-white rounded-2xl flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-slate-200 hover:bg-slate-800"
                       >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <rect x="2" y="2" width="20" height="20" rx="5" ry="5" strokeWidth={2} />
