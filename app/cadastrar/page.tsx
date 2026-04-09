@@ -11,19 +11,21 @@ export default function CadastrarPage() {
   const [loading, setLoading] = useState(false);
   const [nota, setNota] = useState(0);
   const [tags, setTags] = useState<string[]>([]);
-  const [fotoArquivo, setFotoArquivo] = useState<File | null>(null);
-  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  
+  // Estados para múltiplas fotos
+  const [fotosArquivos, setFotosArquivos] = useState<File[]>([]);
+  const [fotosPreviews, setFotosPreviews] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     nome: "",
     telefone: "",
-    local: "", // Mapeado para a coluna 'local'
-    comentario: "", // Mapeado para 'comentario'
+    local: "",
+    comentario: "",
     eixo: "",
     subcategoria: "",
     instagram: "",
-    email: "", // Coluna existente no seu banco
-    indicado_por: "Comunidade", // Exemplo de preenchimento
+    email: "",
+    indicado_por: "Comunidade",
   });
 
   const tagsDisponiveis = ["Pontual", "Preço Justo", "Limpo", "Rápido", "Educado"];
@@ -37,13 +39,24 @@ export default function CadastrarPage() {
   };
 
   const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFotoArquivo(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setFotoPreview(reader.result as string);
-      reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []);
+    
+    if (fotosArquivos.length + files.length > 5) {
+      alert("Você pode enviar no máximo 5 fotos.");
+      return;
     }
+
+    const novosArquivos = [...fotosArquivos, ...files];
+    setFotosArquivos(novosArquivos);
+
+    // Gerar previews
+    const novosPreviews = files.map(file => URL.createObjectURL(file));
+    setFotosPreviews([...fotosPreviews, ...novosPreviews]);
+  };
+
+  const removerFoto = (index: number) => {
+    setFotosArquivos(prev => prev.filter((_, i) => i !== index));
+    setFotosPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   async function handleSubmit(e: React.FormEvent) {
@@ -51,28 +64,29 @@ export default function CadastrarPage() {
     if (nota === 0) return alert("Por favor, selecione uma avaliação.");
     setLoading(true);
 
-    let urlFinalFoto = "";
+    const urlsFotos: string[] = [];
 
-    // 1. Upload da Foto (se houver)
-    if (fotoArquivo) {
-      const fileExt = fotoArquivo.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
+    // 1. Upload de múltiplas fotos
+    for (const file of fotosArquivos) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `fotos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
         .from('prestadores-midia')
-        .upload(`fotos/${fileName}`, fotoArquivo);
+        .upload(filePath, file);
 
       if (!uploadError) {
-        const { data } = supabase.storage.from('prestadores-midia').getPublicUrl(`fotos/${fileName}`);
-        urlFinalFoto = data.publicUrl;
+        const { data } = supabase.storage.from('prestadores-midia').getPublicUrl(filePath);
+        urlsFotos.push(data.publicUrl);
       }
     }
 
-    // 2. Montagem da Descrição com Tags
-    const descricaoComTags = tags.length > 0 
+    const descricaoFinal = tags.length > 0 
       ? `[${tags.join(" • ")}] ${formData.comentario}` 
       : formData.comentario;
 
-    // 3. Insert batendo com suas colunas
+    // 2. Insert no banco (foto_url salva como string separada por vírgula ou JSON)
     const { error } = await supabase.from("prestadores").insert([
       {
         nome: formData.nome,
@@ -80,83 +94,123 @@ export default function CadastrarPage() {
         local: formData.local,
         eixo: formData.eixo,
         subcategoria: formData.subcategoria,
-        categoria: formData.eixo, // Usando o eixo como categoria principal
+        categoria: formData.eixo,
         instagram: formData.instagram.replace("@", ""),
         email: formData.email,
         avaliacao: nota,
         comentario: formData.comentario,
-        descricao: descricaoComTags,
+        descricao: descricaoFinal,
         indicado_por: formData.indicado_por,
-        foto_url: urlFinalFoto, // Lembrar de adicionar esta coluna no DB
+        foto_url: urlsFotos.join(","), // Salva as URLs separadas por vírgula
       },
     ]);
 
     if (error) alert("Erro: " + error.message);
     else router.push("/indicacoes");
-    
     setLoading(false);
   }
 
   return (
     <main className="min-h-screen bg-[#F8FAFC] p-6 pb-24 font-sans text-slate-900">
       <div className="max-w-md mx-auto">
+        
         <header className="mb-8 text-center">
-          <h1 className="text-3xl font-black tracking-tighter">Nova <span className="text-indigo-600">Indicação</span></h1>
+          <h1 className="text-3xl font-black tracking-tighter italic">Nova <span className="text-indigo-600 uppercase">Indicação</span></h1>
+          <p className="text-slate-500 text-sm mt-1 font-medium">Preencha os dados do prestador</p>
         </header>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Foto */}
-          <div className="flex flex-col items-center mb-4">
-            <div onClick={() => fileInputRef.current?.click()} className="w-24 h-24 rounded-3xl bg-white border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden cursor-pointer shadow-sm">
-              {fotoPreview ? <img src={fotoPreview} className="w-full h-full object-cover" /> : <span className="text-[10px] font-bold text-slate-400">FOTO</span>}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Nome *</label>
+              <input required className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm" placeholder="Ex: João" onChange={(e) => setFormData({ ...formData, nome: e.target.value })} />
             </div>
-            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFotoChange} />
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">WhatsApp *</label>
+              <input required type="tel" value={formData.telefone} onChange={handleTelefoneChange} className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm" placeholder="(11) 99999-9999" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Localização</label>
+            <input className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm" placeholder="Bairro ou região de Jundiaí" onChange={(e) => setFormData({ ...formData, local: e.target.value })} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <input required className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-sm" placeholder="Nome *" onChange={(e) => setFormData({ ...formData, nome: e.target.value })} />
-            <input required type="tel" value={formData.telefone} onChange={handleTelefoneChange} className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-sm" placeholder="WhatsApp *" />
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Categoria *</label>
+              <select required className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm appearance-none" value={formData.eixo} onChange={(e) => setFormData({ ...formData, eixo: e.target.value, subcategoria: "" })}>
+                <option value="">Selecione...</option>
+                {EIXOS.map(e => <option key={e} value={e}>{e}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Especialidade *</label>
+              <select required disabled={!formData.eixo} className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm appearance-none disabled:bg-slate-50" value={formData.subcategoria} onChange={(e) => setFormData({ ...formData, subcategoria: e.target.value })}>
+                <option value="">O que faz?</option>
+                {(EIXOS_CATEGORIAS[formData.eixo as keyof typeof EIXOS_CATEGORIAS] || []).map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
           </div>
 
-          <input className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-sm" placeholder="Local / Bairro em Jundiaí" onChange={(e) => setFormData({ ...formData, local: e.target.value })} />
-
-          <div className="grid grid-cols-2 gap-4">
-            <select required className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-sm appearance-none" value={formData.eixo} onChange={(e) => setFormData({ ...formData, eixo: e.target.value, subcategoria: "" })}>
-              <option value="">Categoria...</option>
-              {EIXOS.map(e => <option key={e} value={e}>{e}</option>)}
-            </select>
-            <select required disabled={!formData.eixo} className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-sm appearance-none" value={formData.subcategoria} onChange={(e) => setFormData({ ...formData, subcategoria: e.target.value })}>
-              <option value="">Especialidade...</option>
-              {(EIXOS_CATEGORIAS[formData.eixo as keyof typeof EIXOS_CATEGORIAS] || []).map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 ml-1">Destaques</label>
+            <div className="flex flex-wrap gap-2">
+              {tagsDisponiveis.map(tag => (
+                <button key={tag} type="button" onClick={() => setTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])} className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${tags.includes(tag) ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-400 border border-slate-200'}`}>{tag}</button>
+              ))}
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-             <input className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-sm" placeholder="Instagram" onChange={(e) => setFormData({ ...formData, instagram: e.target.value })} />
-             <input type="email" className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-sm" placeholder="E-mail (opcional)" onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {tagsDisponiveis.map(tag => (
-              <button key={tag} type="button" onClick={() => setTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])} className={`px-4 py-2 rounded-full text-[10px] font-black uppercase ${tags.includes(tag) ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400 border border-slate-200'}`}>{tag}</button>
-            ))}
-          </div>
-
-          <div className="bg-indigo-50/50 p-4 rounded-3xl text-center">
+          <div className="bg-indigo-50/50 p-6 rounded-[2rem] border border-indigo-100 text-center">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-3">Avaliação *</label>
             <div className="flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button key={star} type="button" onClick={() => setNota(star)}>
-                  <svg className={`w-8 h-8 ${star <= nota ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`} fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                  <svg className={`w-10 h-10 ${star <= nota ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`} fill={star <= nota ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.54 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.784.57-1.838-.196-1.539-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
                 </button>
               ))}
             </div>
           </div>
 
-          <textarea required className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-sm resize-none" rows={3} placeholder="Conte sua experiência..." onChange={(e) => setFormData({ ...formData, comentario: e.target.value })} />
+          {/* COMENTÁRIO COM LIMITE DE 100 CARACTERES */}
+          <div>
+            <div className="flex justify-between items-end mb-2 ml-1">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Comentário *</label>
+              <span className={`text-[10px] font-bold ${formData.comentario.length >= 100 ? 'text-red-500' : 'text-slate-400'}`}>{formData.comentario.length}/100</span>
+            </div>
+            <textarea required maxLength={100} className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none text-sm" rows={3} placeholder="Resuma sua experiência..." onChange={(e) => setFormData({ ...formData, comentario: e.target.value })} />
+          </div>
 
-          <button type="submit" disabled={loading} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg disabled:opacity-50">
-            {loading ? "Publicando..." : "Publicar Indicação"}
+          {/* SEÇÃO DE FOTOS (MÁXIMO 5) ABAIXO DOS COMENTÁRIOS */}
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 ml-1">Fotos / Comprovantes (Máx 5)</label>
+            <div className="flex flex-wrap gap-3">
+              {fotosPreviews.map((url, index) => (
+                <div key={index} className="relative w-16 h-16 rounded-xl overflow-hidden shadow-sm group">
+                  <img src={url} className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => removerFoto(index)} className="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-bl-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              ))}
+              
+              {fotosPreviews.length < 5 && (
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="w-16 h-16 rounded-xl bg-white border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300 hover:border-indigo-400 hover:text-indigo-400 transition-all">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                </button>
+              )}
+            </div>
+            <input type="file" multiple ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFotoChange} />
+          </div>
+
+          <button type="submit" disabled={loading} className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50">
+            {loading ? "Publicando..." : "Finalizar Indicação"}
           </button>
+
         </form>
       </div>
     </main>
