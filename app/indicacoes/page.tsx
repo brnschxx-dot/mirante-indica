@@ -1,8 +1,7 @@
-// app/indicacoes/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient"; // Certifique-se de que o caminho está correto
+import { supabase } from "@/lib/supabaseClient";
 import FiltroEixo from "@/components/FiltroEixo";
 
 export default function IndicacoesPage() {
@@ -13,83 +12,106 @@ export default function IndicacoesPage() {
   useEffect(() => {
     async function fetchPrestadores() {
       setLoading(true);
-
-      // Inicia a query apontando para a sua tabela
+      
       let query = supabase
         .from("prestadores")
         .select("*")
-        .order("id", { ascending: false });
+        .order("nome", { ascending: true });
 
-      // Se o usuário selecionou um eixo específico, adiciona o filtro na query
-      if (eixoSelecionado !== "") {
+      if (eixoSelecionado) {
         query = query.eq("eixo", eixoSelecionado);
       }
 
       const { data, error } = await query;
-
-      if (error) {
-        console.error("Erro ao buscar prestadores:", error);
-      } else {
-        setPrestadores(data || []);
-      }
-
+      if (!error) setPrestadores(data || []);
       setLoading(false);
     }
 
     fetchPrestadores();
-  }, [eixoSelecionado]); // O array de dependências aciona o useEffect toda vez que o filtro muda
+  }, [eixoSelecionado]);
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-6">
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">Guia Mirante Indica</h1>
+    <main className="min-h-screen bg-gray-50 py-10 px-4 md:px-8">
+      <div className="max-w-6xl mx-auto">
+        
+        {/* Header da Página */}
+        <header className="mb-10 text-center md:text-left">
+          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+            Mirante <span className="text-indigo-600">Indica</span>
+          </h1>
+          <p className="mt-2 text-lg text-gray-600 font-light">
+            Guia exclusivo de prestadores de serviços recomendados em Jundiaí.
+          </p>
+        </header>
 
-      {/* Renderiza o componente de filtro */}
-      <FiltroEixo 
-        eixoSelecionado={eixoSelecionado} 
-        onSelecionarEixo={setEixoSelecionado} 
-      />
+        {/* Componente de Filtro */}
+        <FiltroEixo 
+          eixoSelecionado={eixoSelecionado} 
+          onSelecionarEixo={setEixoSelecionado} 
+        />
 
-      {/* Renderização Condicional da Lista */}
-      {loading ? (
-        <div className="flex justify-center items-center py-10">
-          <p className="text-gray-500 font-medium animate-pulse">Carregando indicações...</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {prestadores.length === 0 ? (
-            <div className="col-span-full text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-              <p className="text-gray-500">Nenhum prestador encontrado para esta categoria.</p>
-            </div>
-          ) : (
-            prestadores.map((prestador) => (
-              <div key={prestador.id} className="border p-4 rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow">
-                <h2 className="font-bold text-lg text-gray-900">{prestador.nome}</h2>
-                
-                {/* Exibição das categorias como "Badges" (etiquetas) */}
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {prestador.eixo && (
-                    <span className="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full font-medium">
-                      {prestador.eixo}
-                    </span>
-                  )}
-                  {prestador.subcategoria && (
-                    <span className="bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-full border border-gray-200">
-                      {prestador.subcategoria}
-                    </span>
-                  )}
-                </div>
-                
-                {/* Aqui você pode adicionar as outras variáveis do seu banco, como telefone, descrição, etc. */}
-                {prestador.telefone && (
-                  <p className="mt-3 text-sm text-gray-600">
-                    <strong>Contato:</strong> {prestador.telefone}
-                  </p>
-                )}
+        {/* Grid de Conteúdo */}
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {prestadores.length === 0 ? (
+              <div className="col-span-full py-20 text-center bg-white rounded-2xl border-2 border-dashed border-gray-200">
+                <p className="text-gray-400 text-lg">Ainda não temos indicações para este eixo.</p>
               </div>
-            ))
-          )}
-        </div>
-      )}
-    </div>
+            ) : (
+              prestadores.map((item) => (
+                <div key={item.id} className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col h-full">
+                  
+                  {/* Conteúdo do Card */}
+                  <div className="p-6 flex-grow">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md">
+                        {item.eixo || "Geral"}
+                      </span>
+                      <span className="text-gray-400 text-xs italic">
+                        {item.subcategoria}
+                      </span>
+                    </div>
+
+                    <h2 className="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors mb-2">
+                      {item.nome}
+                    </h2>
+                    
+                    <p className="text-gray-500 text-sm leading-relaxed line-clamp-3">
+                      {item.descricao || "Prestador de serviços especializado atendendo a região de Jundiaí."}
+                    </p>
+                  </div>
+
+                  {/* Footer do Card com Ação */}
+                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-gray-400 uppercase font-bold">Contato</span>
+                      <span className="text-sm font-semibold text-gray-700">{item.telefone || "N/A"}</span>
+                    </div>
+                    
+                    {item.telefone && (
+                      <a 
+                        href={`https://wa.me/55${item.telefone.replace(/\D/g,'')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center bg-green-500 hover:bg-green-600 text-white p-2.5 rounded-full transition-colors shadow-md hover:shadow-lg"
+                        title="Chamar no WhatsApp"
+                      >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.067 2.875 1.215 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                        </svg>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
