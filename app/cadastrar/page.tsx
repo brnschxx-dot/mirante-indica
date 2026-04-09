@@ -159,6 +159,21 @@ export default function CadastrarPage() {
           </div>
 
           <div>
+  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Instagram do Prestador</label>
+  <div className="relative">
+    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">@</span>
+    <input 
+      type="text" 
+      className="w-full p-4 pl-8 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm transition-all" 
+      placeholder="usuario.do.insta" 
+      value={formData.instagram}
+      onChange={(e) => setFormData({ ...formData, instagram: e.target.value.replace("@", "").toLowerCase().trim() })} 
+    />
+  </div>
+  <p className="text-[9px] text-slate-400 mt-2 ml-1 font-medium italic">Opcional: Ajuda a validar o trabalho do profissional.</p>
+</div>
+
+          <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 ml-1">Destaques</label>
             <div className="flex flex-wrap gap-2">
               {tagsDisponiveis.map(tag => (
