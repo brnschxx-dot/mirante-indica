@@ -4,11 +4,13 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { EIXOS, EIXOS_CATEGORIAS } from "@/lib/categorias";
 import { useRouter } from "next/navigation";
+import ReactInputMask from "react-input-mask";
 
 export default function CadastrarPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [nota, setNota] = useState(0); // Começa em 0 para estrelas não preenchidas
+  const [nota, setNota] = useState(0);
+  const [tags, setTags] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     nome: "",
@@ -20,14 +22,26 @@ export default function CadastrarPage() {
     instagram: "",
   });
 
+  const tagsDisponiveis = ["Pontual", "Preço Justo", "Limpo", "Rápido", "Educado"];
+
+  const toggleTag = (tag: string) => {
+    setTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  };
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (nota === 0) return alert("Por favor, selecione uma avaliação em estrelas.");
+    if (nota === 0) return alert("Por favor, selecione uma avaliação.");
     
     setLoading(true);
+    // Concatenamos as tags na descrição para visualização no card
+    const descricaoFinal = tags.length > 0 
+      ? `[${tags.join(" • ")}] ${formData.descricao}` 
+      : formData.descricao;
+
     const { error } = await supabase.from("prestadores").insert([
       {
         ...formData,
+        descricao: descricaoFinal,
         avaliacao: nota,
         instagram: formData.instagram.replace("@", ""),
       },
@@ -42,34 +56,35 @@ export default function CadastrarPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] p-6 pb-20 font-sans text-slate-900">
+    <main className="min-h-screen bg-[#F8FAFC] p-6 pb-24 font-sans text-slate-900">
       <div className="max-w-md mx-auto">
         
         <header className="mb-8 text-center">
           <h1 className="text-3xl font-black tracking-tighter">Nova <span className="text-indigo-600">Indicação</span></h1>
-          <p className="text-slate-500 text-sm mt-1">Preencha os dados do prestador abaixo</p>
+          <p className="text-slate-500 text-sm mt-1">Sua indicação ajuda a comunidade de Jundiaí</p>
         </header>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           
-          {/* 1. Nome e Contato lado a lado */}
+          {/* 1. Nome e Contato com Máscara */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Nome *</label>
               <input
                 required
-                className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+                className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm"
                 placeholder="Ex: João"
                 onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Contato *</label>
-              <input
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">WhatsApp *</label>
+              <ReactInputMask
+                mask="(99) 99999-9999"
                 required
-                type="tel"
                 className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
-                placeholder="(11) 9..."
+                placeholder="(00) 00000-0000"
+                value={formData.telefone}
                 onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
               />
             </div>
@@ -77,17 +92,17 @@ export default function CadastrarPage() {
 
           {/* 2. Endereço */}
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Endereço / Local</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Local / Bairro</label>
             <input
               className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-              placeholder="Rua, bairro ou cidade..."
+              placeholder="Rua ou Bairro em Jundiaí..."
               onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
             />
           </div>
 
-          {/* 3. Categoria e Subcategoria lado a lado */}
+          {/* 3. Categoria e Subcategoria */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
+            <div className="relative">
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Categoria *</label>
               <select
                 required
@@ -100,15 +115,15 @@ export default function CadastrarPage() {
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Subcategoria *</label>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Especialidade *</label>
               <select
                 required
                 disabled={!formData.eixo}
-                className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm appearance-none disabled:bg-slate-50 disabled:text-slate-400"
+                className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm appearance-none disabled:bg-slate-50"
                 value={formData.subcategoria}
                 onChange={(e) => setFormData({ ...formData, subcategoria: e.target.value })}
               >
-                <option value="">Espec...</option>
+                <option value="">O que faz?</option>
                 {(EIXOS_CATEGORIAS[formData.eixo as keyof typeof EIXOS_CATEGORIAS] || []).map(s => (
                   <option key={s} value={s}>{s}</option>
                 ))}
@@ -120,17 +135,38 @@ export default function CadastrarPage() {
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Instagram</label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">@</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-500 font-bold">@</span>
               <input
-                className="w-full pl-10 pr-4 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                placeholder="usuario"
+                className="w-full pl-10 pr-4 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-pink-500 outline-none text-sm"
+                placeholder="perfil"
                 onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
               />
             </div>
           </div>
 
-          {/* 5. Avaliação (Estrelas vazias inicialmente) */}
-          <div className="bg-indigo-50/50 p-6 rounded-[2rem] border border-indigo-100 shadow-inner text-center">
+          {/* 5. Tags de Qualidade (Diferencial) */}
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 ml-1">Destaques do Serviço</label>
+            <div className="flex flex-wrap gap-2">
+              {tagsDisponiveis.map(tag => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleTag(tag)}
+                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
+                    tags.includes(tag) 
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100 scale-105' 
+                    : 'bg-white text-slate-400 border border-slate-200 hover:border-indigo-300'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 6. Avaliação (Estrelas) */}
+          <div className="bg-indigo-50/50 p-6 rounded-[2rem] border border-indigo-100 text-center">
             <label className="block text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-3">Sua Avaliação *</label>
             <div className="flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -138,7 +174,7 @@ export default function CadastrarPage() {
                   key={star}
                   type="button"
                   onClick={() => setNota(star)}
-                  className="transition-all hover:scale-110 active:scale-95"
+                  className="transition-all hover:scale-110"
                 >
                   <svg 
                     className={`w-10 h-10 ${star <= nota ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`} 
@@ -151,36 +187,34 @@ export default function CadastrarPage() {
                 </button>
               ))}
             </div>
-            {nota === 0 && <p className="text-[10px] text-slate-400 mt-2 italic font-medium">Toque para avaliar</p>}
           </div>
 
-          {/* 6. Comentário */}
+          {/* 7. Comentário com Contador */}
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Comentário *</label>
+            <div className="flex justify-between items-end mb-2 ml-1">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Seu Comentário *</label>
+              <span className={`text-[10px] font-bold ${formData.descricao.length > 180 ? 'text-red-500' : 'text-slate-400'}`}>
+                {formData.descricao.length}/200
+              </span>
+            </div>
             <textarea
               required
+              maxLength={200}
               rows={4}
               className="w-full p-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none text-sm"
-              placeholder="Conte como foi sua experiência com este prestador..."
+              placeholder="Descreva o serviço em poucas palavras..."
               onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
             />
           </div>
 
-          {/* Botão Finalizar */}
+          {/* Botões */}
           <div className="pt-4 flex gap-3">
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold text-sm hover:bg-slate-200 transition-all"
-            >
-              Cancelar
-            </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-[2] py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all disabled:opacity-50"
+              className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50"
             >
-              {loading ? "Salvando..." : "Finalizar"}
+              {loading ? "Processando..." : "Publicar Indicação"}
             </button>
           </div>
 
