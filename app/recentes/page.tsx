@@ -126,52 +126,80 @@ function CardIndicao({ item, onOpenGallery }: { item: any, onOpenGallery: (fotos
   const [dislikes, setDislikes] = useState(item.dislikes || 0);
   const [votoAtual, setVotoAtual] = useState<'like' | 'dislike' | null>(null);
 
-  // Carrega fotos (suporta string única ou separada por vírgula)
   const fotosArray = item.foto_url ? item.foto_url.split(',') : [];
   const primeiraFoto = fotosArray[0] || null;
-
   const dataFormatada = new Date(item.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 
-  // Recupera o voto salvo localmente ao carregar o card
+  // 1. Recupera o voto salvo localmente
   useEffect(() => {
     const votoSalvo = localStorage.getItem(`voto_${item.id}`);
     if (votoSalvo) setVotoAtual(votoSalvo as 'like' | 'dislike');
   }, [item.id]);
 
-  async function handleVoto(tipo: 'like' | 'dislike') {
-    let acao = '';
-    
-    // Se clicar no mesmo botão, remove o voto
-    if (votoAtual === tipo) {
-      if (tipo === 'like') { setLikes(likes - 1); acao = 'remover_like'; }
-      else { setDislikes(dislikes - 1); acao = 'remover_dislike'; }
-      setVotoAtual(null);
-      localStorage.removeItem(`voto_${item.id}`);
-    } 
-    // Se não tinha voto, adiciona
-    else if (votoAtual === null) {
-      if (tipo === 'like') { setLikes(likes + 1); await supabase.rpc('incrementar_voto', { row_id: item.id, campo: 'like' }); }
-      else { setDislikes(dislikes + 1); await supabase.rpc('incrementar_voto', { row_id: item.id, campo: 'dislike' }); }
-      setVotoAtual(tipo);
-      localStorage.setItem(`voto_${item.id}`, tipo);
-      return;
-    } 
-    // Se está trocando o voto
-    else {
-      if (tipo === 'like') {
-        setLikes(likes + 1);
-        setDislikes(dislikes - 1);
-        acao = 'dislike_para_like';
-      } else {
-        setLikes(likes - 1);
-        setDislikes(dislikes + 1);
-        acao = 'like_para_dislike';
-      }
-      setVotoAtual(tipo);
-      localStorage.setItem(`voto_${item.id}`, tipo);
-    }
+  // 2. Sincroniza com os dados reais do banco (evita mostrar 0 se já houver votos no Supabase)
+  useEffect(() => {
+    setLikes(item.likes || 0);
+    setDislikes(item.dislikes || 0);
+  }, [item.likes, item.dislikes]);
 
-    if (acao) await supabase.rpc('alternar_voto', { row_id: item.id, acao });
+  async function handleVoto(e: React.MouseEvent, tipo: 'like' | 'dislike') {
+    e.stopPropagation(); // Evita conflitos de clique com outros elementos do card
+
+    const oldLikes = likes;
+    const oldDislikes = dislikes;
+    const oldVoto = votoAtual;
+    let acao = '';
+
+    try {
+      if (votoAtual === tipo) {
+        // Remover voto garantindo que não fique negativo
+        if (tipo === 'like') setLikes(l => Math.max(0, l - 1));
+        else setDislikes(d => Math.max(0, d - 1));
+        
+        setVotoAtual(null);
+        localStorage.removeItem(`voto_${item.id}`);
+        acao = tipo === 'like' ? 'remover_like' : 'remover_dislike';
+      } 
+      else if (votoAtual === null) {
+        // Novo voto
+        if (tipo === 'like') setLikes(l => l + 1);
+        else setDislikes(d => d + 1);
+        
+        setVotoAtual(tipo);
+        localStorage.setItem(`voto_${item.id}`, tipo);
+        acao = `incrementar_${tipo}`;
+      } 
+      else {
+        // Trocando o voto
+        if (tipo === 'like') {
+          setLikes(l => l + 1);
+          setDislikes(d => Math.max(0, d - 1));
+          acao = 'dislike_para_like';
+        } else {
+          setLikes(l => Math.max(0, l - 1));
+          setDislikes(d => d + 1);
+          acao = 'like_para_dislike';
+        }
+        setVotoAtual(tipo);
+        localStorage.setItem(`voto_${item.id}`, tipo);
+      }
+
+      // Executa a chamada no Supabase
+      const isIncrement = acao.includes('incrementar');
+      const { error } = await supabase.rpc(
+        isIncrement ? 'incrementar_voto' : 'alternar_voto', 
+        isIncrement ? { row_id: item.id, campo: tipo } : { row_id: item.id, acao }
+      );
+
+      if (error) throw error;
+
+    } catch (err) {
+      console.error("Erro ao registrar voto:", err);
+      // Se falhar (ex: sem internet), reverte o visual para o usuário não ser enganado
+      setLikes(oldLikes);
+      setDislikes(oldDislikes);
+      setVotoAtual(oldVoto);
+    }
   }
 
   return (
@@ -228,14 +256,20 @@ function CardIndicao({ item, onOpenGallery }: { item: any, onOpenGallery: (fotos
           "{item.comentario}"
         </p>
 
-        {/* FOOTER VOTOS (COM PERSISTÊNCIA NO LOCALSTORAGE) */}
+        {/* FOOTER VOTOS */}
         <div className="flex items-center justify-between pt-2 border-t border-slate-50 mt-auto">
-          <button onClick={() => handleVoto('like')} className={`flex items-center gap-1 transition-all ${votoAtual === 'like' ? 'text-green-500 scale-110' : 'text-slate-300 hover:text-green-400'}`}>
+          <button 
+            onClick={(e) => handleVoto(e, 'like')} 
+            className={`flex items-center gap-1 transition-all ${votoAtual === 'like' ? 'text-green-500 scale-110' : 'text-slate-300 hover:text-green-400'}`}
+          >
             <ThumbsUp className={`w-3.5 h-3.5 ${votoAtual === 'like' ? 'fill-green-50' : ''}`} />
             <span className="text-[10px] font-black">{likes}</span>
           </button>
 
-          <button onClick={() => handleVoto('dislike')} className={`flex items-center gap-1 transition-all ${votoAtual === 'dislike' ? 'text-red-500 scale-110' : 'text-slate-300 hover:text-red-400'}`}>
+          <button 
+            onClick={(e) => handleVoto(e, 'dislike')} 
+            className={`flex items-center gap-1 transition-all ${votoAtual === 'dislike' ? 'text-red-500 scale-110' : 'text-slate-300 hover:text-red-400'}`}
+          >
             <ThumbsDown className={`w-3.5 h-3.5 ${votoAtual === 'dislike' ? 'fill-red-50' : ''}`} />
             <span className="text-[10px] font-black">{dislikes}</span>
           </button>
