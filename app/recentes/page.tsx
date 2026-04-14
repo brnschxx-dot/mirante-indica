@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { 
   Clock, ThumbsUp, ThumbsDown, User, MapPin, 
-  Star, ChevronLeft, ChevronRight, ArrowLeft 
+  Star, ChevronLeft, ChevronRight, ArrowLeft, Image as ImageIcon
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 
@@ -35,9 +35,9 @@ export default function RecentesPage() {
 
   return (
     <main className="min-h-screen bg-[#F8FAFC] p-4 pb-32 font-sans text-slate-900">
-      <div className="max-w-4xl mx-auto"> {/* Limita a largura no PC */}
+      <div className="max-w-4xl mx-auto">
         
-        {/* BOTÃO VOLTAR E HEADER */}
+        {/* HEADER */}
         <div className="flex items-center justify-between mb-8">
           <button 
             onClick={() => router.back()}
@@ -58,8 +58,8 @@ export default function RecentesPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center p-20 italic text-slate-400 font-bold uppercase text-[10px] tracking-widest">
-            Carregando...
+          <div className="flex justify-center p-20 animate-pulse text-[10px] font-black uppercase tracking-widest text-slate-300">
+            Sincronizando...
           </div>
         ) : (
           <>
@@ -71,28 +71,17 @@ export default function RecentesPage() {
 
             {/* PAGINAÇÃO */}
             <div className="flex items-center justify-between mt-10 p-2 bg-white rounded-2xl border border-slate-100 shadow-sm">
-              <button 
-                disabled={pagina === 0}
-                onClick={() => { setPagina(pagina - 1); window.scrollTo(0, 0); }}
-                className="p-3 hover:bg-slate-50 rounded-xl disabled:opacity-20"
-              >
+              <button disabled={pagina === 0} onClick={() => { setPagina(pagina - 1); window.scrollTo(0, 0); }} className="p-3 hover:bg-slate-50 rounded-xl disabled:opacity-20">
                 <ChevronLeft className="w-5 h-5 text-indigo-600" />
               </button>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                Página {pagina + 1}
-              </span>
-              <button 
-                disabled={indicacoes.length < ITENS_POR_PAGINA}
-                onClick={() => { setPagina(pagina + 1); window.scrollTo(0, 0); }}
-                className="p-3 hover:bg-slate-50 rounded-xl disabled:opacity-20"
-              >
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Página {pagina + 1}</span>
+              <button disabled={indicacoes.length < ITENS_POR_PAGINA} onClick={() => { setPagina(pagina + 1); window.scrollTo(0, 0); }} className="p-3 hover:bg-slate-50 rounded-xl disabled:opacity-20">
                 <ChevronRight className="w-5 h-5 text-indigo-600" />
               </button>
             </div>
           </>
         )}
       </div>
-
       <BottomNav />
     </main>
   );
@@ -103,95 +92,89 @@ function CardIndicao({ item }: { item: any }) {
   const [dislikes, setDislikes] = useState(item.dislikes || 0);
   const [votoAtual, setVotoAtual] = useState<'like' | 'dislike' | null>(null);
 
-  const dataFormatada = new Date(item.created_at).toLocaleDateString('pt-BR', {
-    day: '2-digit', month: '2-digit'
-  });
+  // Pega a primeira URL da string (caso tenha salvo múltiplas separadas por vírgula)
+  const primeiraFoto = item.foto_url ? item.foto_url.split(',')[0] : null;
+
+  const dataFormatada = new Date(item.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 
   async function handleVoto(tipo: 'like' | 'dislike') {
     let acao = '';
-
     if (votoAtual === tipo) {
-      // Remover voto se clicar no mesmo
       if (tipo === 'like') { setLikes(likes - 1); acao = 'remover_like'; }
       else { setDislikes(dislikes - 1); acao = 'remover_dislike'; }
       setVotoAtual(null);
-    } 
-    else if (votoAtual === null) {
-      // Primeiro voto
+    } else if (votoAtual === null) {
       if (tipo === 'like') { setLikes(likes + 1); await supabase.rpc('incrementar_voto', { row_id: item.id, campo: 'like' }); }
       else { setDislikes(dislikes + 1); await supabase.rpc('incrementar_voto', { row_id: item.id, campo: 'dislike' }); }
       setVotoAtual(tipo);
       return;
-    } 
-    else {
-      // Trocar voto
-      if (tipo === 'like') {
-        setLikes(likes + 1);
-        setDislikes(dislikes - 1);
-        acao = 'dislike_para_like';
-      } else {
-        setLikes(likes - 1);
-        setDislikes(dislikes + 1);
-        acao = 'like_para_dislike';
-      }
+    } else {
+      if (tipo === 'like') { setLikes(likes + 1); setDislikes(dislikes - 1); acao = 'dislike_para_like'; }
+      else { setLikes(likes - 1); setDislikes(dislikes + 1); acao = 'like_para_dislike'; }
       setVotoAtual(tipo);
     }
-
-    if (acao) {
-      await supabase.rpc('alternar_voto', { row_id: item.id, acao });
-    }
+    if (acao) await supabase.rpc('alternar_voto', { row_id: item.id, acao });
   }
 
   return (
-    <div className="bg-white border border-slate-100 rounded-[1.5rem] p-4 shadow-sm flex flex-col h-full hover:shadow-md transition-shadow">
-      <div className="flex-1">
-        <div className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 uppercase tracking-widest mb-3">
-          <User className="w-2.5 h-2.5" />
-          <span className="truncate max-w-[50px]">{item.indicado_por || 'Anon'}</span>
-          <span>•</span>
-          <span>{dataFormatada}</span>
+    <div className="bg-white border border-slate-100 rounded-[1.5rem] overflow-hidden shadow-sm flex flex-col h-full hover:shadow-md transition-all border-b-4 border-b-slate-200">
+      
+      {/* ESPAÇO DA IMAGEM */}
+      <div className="relative w-full h-24 md:h-32 bg-slate-100 overflow-hidden">
+        {primeiraFoto ? (
+          <img src={primeiraFoto} alt={item.nome} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-indigo-50 text-indigo-200">
+            <ImageIcon className="w-6 h-6 mb-1" />
+            <span className="text-[7px] font-black uppercase tracking-widest">Sem Foto</span>
+          </div>
+        )}
+        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded-lg shadow-sm">
+           <span className="text-[8px] font-black text-slate-600">{dataFormatada}</span>
+        </div>
+      </div>
+
+      <div className="p-3 flex-1 flex flex-col">
+        {/* NOME E CATEGORIA */}
+        <div className="mb-2">
+          <h3 className="text-[13px] font-black leading-tight text-slate-800 line-clamp-1 italic uppercase">
+            {item.nome}
+          </h3>
+          <p className="text-[8px] font-bold text-indigo-600 uppercase tracking-tighter">
+            {item.subcategoria}
+          </p>
         </div>
 
-        <h3 className="text-[14px] font-black leading-tight text-slate-800 mb-1 line-clamp-2">
-          {item.nome}
-        </h3>
-
-        <p className="text-[8px] font-black text-indigo-600 uppercase mb-2">
-          {item.eixo} • {item.subcategoria}
-        </p>
-
-        <div className="flex items-center gap-1 text-[9px] font-bold text-slate-500 mb-3">
-          <MapPin className="w-2.5 h-2.5 shrink-0 text-slate-300" />
-          <span className="truncate">{item.local || 'Jundiaí'}</span>
+        {/* INFO DISCRETA */}
+        <div className="flex items-center gap-1 text-[8px] font-bold text-slate-400 mb-2 truncate">
+          <MapPin className="w-2 h-2 shrink-0" />
+          <span>{item.local || 'Jundiaí'}</span>
         </div>
 
-        <div className="flex gap-0.5 mb-3">
+        {/* ESTRELAS REDUZIDAS */}
+        <div className="flex gap-0.5 mb-2">
           {[...Array(5)].map((_, i) => (
             <Star key={i} className={`w-2.5 h-2.5 ${i < item.avaliacao ? 'fill-amber-400 text-amber-400' : 'text-slate-100'}`} />
           ))}
         </div>
 
-        <p className="text-[10px] text-slate-600 leading-relaxed italic mb-4 line-clamp-3 font-medium bg-slate-50/50 p-2 rounded-lg border border-slate-100">
+        {/* COMENTÁRIO */}
+        <p className="text-[10px] text-slate-500 leading-snug italic line-clamp-2 mb-3 bg-slate-50 p-2 rounded-xl flex-1">
           "{item.comentario}"
         </p>
-      </div>
 
-      <div className="flex items-center justify-between pt-3 border-t border-slate-50 mt-auto">
-        <button 
-          onClick={() => handleVoto('like')}
-          className={`flex items-center gap-1.5 transition-all ${votoAtual === 'like' ? 'text-green-500 scale-110' : 'text-slate-300'}`}
-        >
-          <ThumbsUp className={`w-4 h-4 ${votoAtual === 'like' ? 'fill-green-50' : ''}`} />
-          <span className="text-[10px] font-black">{likes}</span>
-        </button>
+        {/* FOOTER VOTOS */}
+        <div className="flex items-center justify-between pt-2 border-t border-slate-50 mt-auto">
+          <button onClick={() => handleVoto('like')} className={`flex items-center gap-1 transition-all ${votoAtual === 'like' ? 'text-green-500 scale-110' : 'text-slate-300'}`}>
+            <ThumbsUp className={`w-3.5 h-3.5 ${votoAtual === 'like' ? 'fill-green-50' : ''}`} />
+            <span className="text-[10px] font-black">{likes}</span>
+          </button>
 
-        <button 
-          onClick={() => handleVoto('dislike')}
-          className={`flex items-center gap-1.5 transition-all ${votoAtual === 'dislike' ? 'text-red-500 scale-110' : 'text-slate-300'}`}
-        >
-          <ThumbsDown className={`w-4 h-4 ${votoAtual === 'dislike' ? 'fill-red-50' : ''}`} />
-          <span className="text-[10px] font-black">{dislikes}</span>
-        </button>
+          <button onClick={() => handleVoto('dislike')} className={`flex items-center gap-1 transition-all ${votoAtual === 'dislike' ? 'text-red-500 scale-110' : 'text-slate-300'}`}>
+            <ThumbsDown className={`w-3.5 h-3.5 ${votoAtual === 'dislike' ? 'fill-red-50' : ''}`} />
+            <span className="text-[10px] font-black">{dislikes}</span>
+          </button>
+        </div>
       </div>
     </div>
   );
