@@ -180,7 +180,7 @@ function CardIndicao({ item, onOpenGallery }: { item: any, onOpenGallery: (fotos
       <div className="p-5 flex-1 flex flex-col">
         {/* NOME E INSTAGRAM */}
         <div className="flex items-start justify-between gap-4 mb-2">
-          <h3 className="text-[16px] font-black text-slate-800 italic uppercase line-clamp-1 flex-1">
+          <h3 className="text-[20px] font-black text-slate-800 italic uppercase line-clamp-1 flex-1">
             {item.nome}
           </h3>
           {item.instagram && (
