@@ -206,7 +206,7 @@ function CardIndicao({ item, onOpenGallery }: { item: any, onOpenGallery: (fotos
             ))}
           </div>
           <div className="flex items-center gap-1 text-slate-400">
-            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 48 48">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 48 48">
               <path fill="#1c9957" d="M42,39V9c0-1.657-1.343-3-3-3H9C7.343,6,6,7.343,6,9v30c0,1.657,1.343,3,3,3h30C40.657,42,42,40.657,42,39z"></path>
               <path fill="#3e7bf1" d="M9,42h30c1.657,0-15-16-15-16S7.343,42,9,42z"></path>
               <path fill="#cbccc9" d="M42,39V9c0-1.657-16,15-16,15S42,40.657,42,39z"></path>
