@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { 
-  Clock, ThumbsUp, ThumbsDown, MapPin, 
-  Star, ChevronLeft, ChevronRight, ArrowLeft, Image as ImageIcon, X 
+  Clock, ThumbsUp, ThumbsDown, Star, ArrowLeft, Image as ImageIcon, X 
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 
@@ -15,10 +14,31 @@ export default function RecentesPage() {
   const router = useRouter();
   const [indicacoes, setIndicacoes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pagina, setPagina] = useState(0);
   const [modalImagens, setModalImagens] = useState<{aberto: boolean, fotos: string[]}>({ aberto: false, fotos: [] });
 
-  useEffect(() => { fetchRecentes(); }, [pagina]);
+  useEffect(() => {
+    fetchRecentes();
+
+    // ESCUTA EM TEMPO REAL: Atualiza os números se outra pessoa votar
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'prestadores' },
+        (payload) => {
+          setIndicacoes((prev) =>
+            prev.map((item) =>
+              item.id === payload.new.id 
+                ? { ...item, likes: payload.new.likes, dislikes: payload.new.dislikes } 
+                : item
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   async function fetchRecentes() {
     setLoading(true);
@@ -26,7 +46,7 @@ export default function RecentesPage() {
       .from("prestadores")
       .select("*")
       .order("created_at", { ascending: false })
-      .range(pagina * ITENS_POR_PAGINA, (pagina + 1) * ITENS_POR_PAGINA - 1);
+      .range(0, ITENS_POR_PAGINA - 1);
 
     if (!error && data) setIndicacoes(data);
     setLoading(false);
@@ -59,11 +79,10 @@ export default function RecentesPage() {
         )}
       </div>
 
-      {/* MODAL DE GALERIA */}
       {modalImagens.aberto && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-sm flex flex-col p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-sm flex flex-col p-4 overflow-y-auto">
           <button onClick={() => setModalImagens({ aberto: false, fotos: [] })} className="self-end p-3 bg-white/10 rounded-full text-white mb-4"><X className="w-6 h-6" /></button>
-          <div className="flex-1 overflow-y-auto space-y-4 flex flex-col items-center">
+          <div className="space-y-4 flex flex-col items-center">
             {modalImagens.fotos.map((url, idx) => (
               <img key={idx} src={url} className="max-w-full rounded-2xl shadow-2xl border border-white/10" alt="Job" />
             ))}
@@ -76,67 +95,77 @@ export default function RecentesPage() {
 }
 
 function CardIndicao({ item, onOpenGallery }: { item: any, onOpenGallery: (fotos: string[]) => void }) {
-  // Estado local sincronizado com as props do Supabase
-  const [likes, setLikes] = useState(item.likes || 0);
-  const [dislikes, setDislikes] = useState(item.dislikes || 0);
+  // Tipagem inicial do estado como number
+  const [likes, setLikes] = useState<number>(item.likes || 0);
+  const [dislikes, setDislikes] = useState<number>(item.dislikes || 0);
   const [votoUsuario, setVotoUsuario] = useState<'like' | 'dislike' | null>(null);
 
   const fotosArray = item.foto_url ? item.foto_url.split(',') : [];
   const dataFormatada = new Date(item.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 
-  // Sincroniza o estado inicial e o localStorage
   useEffect(() => {
-    const salvo = localStorage.getItem(`voto_${item.id}`);
-    if (salvo) setVotoUsuario(salvo as 'like' | 'dislike');
     setLikes(item.likes || 0);
     setDislikes(item.dislikes || 0);
-  }, [item.id, item.likes, item.dislikes]);
+  }, [item.likes, item.dislikes]);
+
+  useEffect(() => {
+    async function carregarVoto() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('votos')
+          .select('tipo')
+          .eq('prestador_id', item.id)
+          .eq('user_id', user.id)
+          .single();
+        if (data) setVotoUsuario(data.tipo as 'like' | 'dislike');
+      } else {
+        const salvo = localStorage.getItem(`voto_${item.id}`);
+        if (salvo) setVotoUsuario(salvo as 'like' | 'dislike');
+      }
+    }
+    carregarVoto();
+  }, [item.id]);
 
   async function processarVoto(tipo: 'like' | 'dislike') {
-    const anterior = { likes, dislikes, votoUsuario };
-    let acaoRpc = '';
+    const backup = { likes, dislikes, votoUsuario };
+    let novoVoto: 'like' | 'dislike' | null = tipo;
 
-    // Lógica de Atualização Otimista
+    // Lógica Otimista com tipagem explícita nos parâmetros (l: number, d: number)
     if (votoUsuario === tipo) {
-      // Remover voto
-      tipo === 'like' ? setLikes(l => l - 1) : setDislikes(d => d - 1);
-      setVotoUsuario(null);
-      localStorage.removeItem(`voto_${item.id}`);
-      acaoRpc = tipo === 'like' ? 'rem_like' : 'rem_dislike';
-    } 
-    else if (!votoUsuario) {
-      // Novo voto
-      tipo === 'like' ? setLikes(l => l + 1) : setDislikes(d => d + 1);
-      setVotoUsuario(tipo);
-      localStorage.setItem(`voto_${item.id}`, tipo);
-      acaoRpc = `add_${tipo}`;
-    } 
-    else {
-      // Trocar voto
+      tipo === 'like' 
+        ? setLikes((l: number) => l - 1) 
+        : setDislikes((d: number) => d - 1);
+      novoVoto = null;
+    } else if (!votoUsuario) {
+      tipo === 'like' 
+        ? setLikes((l: number) => l + 1) 
+        : setDislikes((d: number) => d + 1);
+    } else {
       if (tipo === 'like') {
-        setLikes(l => l + 1);
-        setDislikes(d => d - 1);
-        acaoRpc = 'dislike_to_like';
+        setLikes((l: number) => l + 1);
+        setDislikes((d: number) => d - 1);
       } else {
-        setLikes(l => l - 1);
-        setDislikes(d => d + 1);
-        acaoRpc = 'like_to_dislike';
+        setLikes((l: number) => l - 1);
+        setDislikes((d: number) => d + 1);
       }
-      setVotoUsuario(tipo);
-      localStorage.setItem(`voto_${item.id}`, tipo);
     }
 
-    // Persistência no Banco
-    const { error } = await supabase.rpc('gerenciar_voto', { row_id: item.id, acao: acaoRpc });
+    setVotoUsuario(novoVoto);
+    if (novoVoto) localStorage.setItem(`voto_${item.id}`, novoVoto);
+    else localStorage.removeItem(`voto_${item.id}`);
+
+    // Persistência no Banco via RPC
+    const { error } = await supabase.rpc('gerenciar_voto', {
+      p_prestador_id: item.id,
+      p_tipo: novoVoto
+    });
 
     if (error) {
-      // Rollback em caso de erro
-      setLikes(anterior.likes);
-      setDislikes(anterior.dislikes);
-      setVotoUsuario(anterior.votoUsuario);
-      if (anterior.votoUsuario) localStorage.setItem(`voto_${item.id}`, anterior.votoUsuario);
-      else localStorage.removeItem(`voto_${item.id}`);
-      alert("Erro ao sincronizar voto. Tente novamente.");
+      setLikes(backup.likes);
+      setDislikes(backup.dislikes);
+      setVotoUsuario(backup.votoUsuario);
+      alert("Erro ao salvar voto. Verifique sua conexão ou login.");
     }
   }
 
