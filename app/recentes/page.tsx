@@ -206,7 +206,7 @@ function CardIndicao({ item, onOpenGallery }: { item: any, onOpenGallery: (fotos
             ))}
           </div>
           <div className="flex items-center gap-1 text-slate-400">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 48 48">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48">
               <path fill="#1c9957" d="M42,39V9c0-1.657-1.343-3-3-3H9C7.343,6,6,7.343,6,9v30c0,1.657,1.343,3,3,3h30C40.657,42,42,40.657,42,39z"></path>
               <path fill="#3e7bf1" d="M9,42h30c1.657,0-15-16-15-16S7.343,42,9,42z"></path>
               <path fill="#cbccc9" d="M42,39V9c0-1.657-16,15-16,15S42,40.657,42,39z"></path>
@@ -216,7 +216,7 @@ function CardIndicao({ item, onOpenGallery }: { item: any, onOpenGallery: (fotos
               <path fill="#752622" d="M36 8.5A3.5 3.5 0 1 0 36 15.5A3.5 3.5 0 1 0 36 8.5Z"></path>
               <path fill="#fff" d="M14.493,12.531v2.101h2.994c-0.392,1.274-1.455,2.185-2.994,2.185c-1.833,0-3.318-1.485-3.318-3.318s1.486-3.318,3.318-3.318c0.824,0,1.576,0.302,2.156,0.799l1.548-1.547C17.22,8.543,15.92,8,14.493,8c-3.038,0-5.501,2.463-5.501,5.5s2.463,5.5,5.501,5.5c4.81,0,5.637-4.317,5.184-6.461L14.493,12.531z"></path>
             </svg>
-            <span className="text-[8px] font-bold uppercase">{item.bairro || 'Jundiaí'}</span>
+            <span className="text-[16px] font-bold uppercase">{item.bairro || 'Jundiaí'}</span>
           </div>
         </div>
 
