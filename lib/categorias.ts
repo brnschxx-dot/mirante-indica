@@ -1,6 +1,6 @@
 export const EIXOS_CATEGORIAS: Record<string, string[]> = {
   "Gastronomia": [
-    "Pizza", "Hambúrgueres e Lanches", "Comida Japonesa", 
+    "Pizza", "Hambúrgueres e Lanches", "Pastel", "Comida Japonesa", 
     "Marmitas e Congelados", "Bolos e Confeitaria", "Padaria", 
     "Pães Artesanais", "Cervejas Artesanais e Adegas"
   ],
