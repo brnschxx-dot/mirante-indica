@@ -74,7 +74,7 @@ export default function InicioPage() {
         <div className="flex justify-between items-center mb-6 max-w-2xl mx-auto">
           
           {/* BOTÃO DE PERFIL: Link funcional para /perfil */}
-          <Link href="/perfil/page.tsx" className="flex items-center gap-3 active:scale-95 transition-all group">
+          <Link href="perfil/page.tsx" className="flex items-center gap-3 active:scale-95 transition-all group">
             <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center border-2 border-white shadow-lg overflow-hidden text-white group-hover:bg-indigo-700 transition-colors">
               <User className="w-6 h-6" />
             </div>
