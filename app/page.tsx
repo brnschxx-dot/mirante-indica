@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import Link from "next/link"; // Importado para navegação
 import { 
   Search, MapPin, Star, Bookmark, Bell, BadgeCheck, 
   Paintbrush, Zap, Wrench, Droplets, Hammer, ChevronRight,
@@ -17,7 +18,6 @@ export default function InicioPage() {
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState("");
 
-  // Categorias mapeadas para os seus eixos/subcategorias
   const categorias = [
     { id: 1, nome: "Pintura", icon: Paintbrush },
     { id: 2, nome: "Elétrica", icon: Zap },
@@ -30,13 +30,11 @@ export default function InicioPage() {
     async function loadHomeData() {
       setLoading(true);
       
-      // 1. Nome do Usuário (Se estiver logado via Auth)
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.user_metadata?.full_name) {
         setUserName(user.user_metadata.full_name.split(' ')[0]);
       }
 
-      // 2. Indicação da Semana: Buscamos o prestador com maior avaliação e mais likes
       const { data: feat } = await supabase
         .from("prestadores")
         .select("*")
@@ -46,15 +44,13 @@ export default function InicioPage() {
         .single();
       setDestaque(feat);
 
-      // 3. Perto de Você: Filtra pela coluna 'local' (ajustado para Jundiaí/Vila Arens)
       const { data: perto } = await supabase
         .from("prestadores")
         .select("*")
-        .ilike("local", "%Jundiaí%") // Busca flexível na sua coluna 'local'
+        .ilike("local", "%Jundiaí%") 
         .limit(6);
       setPertoDeVoce(perto || []);
 
-      // 4. Seção Salvos: Vamos contar quantos 'likes' o usuário atual já deu na tabela 'votos'
       if (user) {
         const { count } = await supabase
           .from("votos")
@@ -76,22 +72,25 @@ export default function InicioPage() {
       {/* HEADER: Saudação + Perfil */}
       <header className="bg-white px-4 pt-6 pb-6 rounded-b-[2.5rem] shadow-sm border-b border-slate-100">
         <div className="flex justify-between items-center mb-6 max-w-2xl mx-auto">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center border-2 border-white shadow-lg overflow-hidden text-white">
+          
+          {/* BOTÃO DE PERFIL: Agora um Link funcional para /perfil */}
+          <Link href="/perfil" className="flex items-center gap-3 active:scale-95 transition-all group">
+            <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center border-2 border-white shadow-lg overflow-hidden text-white group-hover:bg-indigo-700 transition-colors">
               <User className="w-6 h-6" />
             </div>
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Bem-vindo,</p>
               <h1 className="text-xl font-black text-slate-800 leading-none">{userName}</h1>
             </div>
-          </div>
+          </Link>
+
           <button className="p-2.5 bg-slate-50 rounded-2xl border border-slate-100 relative active:scale-90 transition-all">
             <Bell className="w-5 h-5 text-slate-500" />
             <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-indigo-500 rounded-full border-2 border-white"></span>
           </button>
         </div>
 
-        {/* BUSCA INPUT ARREDONDADO */}
+        {/* BUSCA INPUT */}
         <div className="relative max-w-2xl mx-auto">
           <input 
             type="text" 
@@ -106,7 +105,7 @@ export default function InicioPage() {
 
       <div className="max-w-2xl mx-auto p-4 space-y-10 mt-4">
         
-        {/* CATEGORIAS (Stories) */}
+        {/* CATEGORIAS */}
         <section>
           <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x px-1">
             {categorias.map((cat) => (
@@ -138,7 +137,6 @@ export default function InicioPage() {
                 <div className="flex-1 text-center sm:text-left">
                   <div className="flex items-center justify-center sm:justify-start gap-1.5 mb-1">
                     <h3 className="text-lg font-black uppercase italic text-slate-800 leading-tight">{destaque.nome}</h3>
-                    {/* Selo Verificado (Estático por enquanto) */}
                     <BadgeCheck className="w-5 h-5 text-indigo-500 fill-indigo-50" />
                   </div>
                   <p className="text-[10px] font-black text-indigo-600 uppercase mb-3 tracking-widest">{destaque.subcategoria || destaque.categoria}</p>
@@ -180,7 +178,7 @@ export default function InicioPage() {
           </div>
         </section>
 
-        {/* SEÇÃO SALVOS (Baseado na sua tabela de votos) */}
+        {/* SEÇÃO SALVOS */}
         <section>
           <div className="bg-indigo-600 rounded-[2rem] p-6 flex items-center justify-between shadow-lg shadow-indigo-200 active:scale-[0.98] transition-all cursor-pointer overflow-hidden relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
