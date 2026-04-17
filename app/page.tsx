@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import Link from "next/link"; // Importado para navegação
+import Link from "next/link";
 import { 
   Search, MapPin, Star, Bookmark, Bell, BadgeCheck, 
   Paintbrush, Zap, Wrench, Droplets, Hammer, ChevronRight,
@@ -73,7 +73,7 @@ export default function InicioPage() {
       <header className="bg-white px-4 pt-6 pb-6 rounded-b-[2.5rem] shadow-sm border-b border-slate-100">
         <div className="flex justify-between items-center mb-6 max-w-2xl mx-auto">
           
-          {/* BOTÃO DE PERFIL: Agora um Link funcional para /perfil */}
+          {/* BOTÃO DE PERFIL: Link funcional para /perfil */}
           <Link href="/perfil" className="flex items-center gap-3 active:scale-95 transition-all group">
             <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center border-2 border-white shadow-lg overflow-hidden text-white group-hover:bg-indigo-700 transition-colors">
               <User className="w-6 h-6" />
