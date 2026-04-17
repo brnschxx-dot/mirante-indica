@@ -78,11 +78,12 @@ export default function InicioPage() {
             <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center border-2 border-white shadow-lg overflow-hidden text-white group-hover:bg-indigo-700 transition-colors">
               <User className="w-6 h-6" />
             </div>
+          </Link>
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Bem-vindo,</p>
               <h1 className="text-xl font-black text-slate-800 leading-none">{userName}</h1>
             </div>
-          </Link>
+          
 
           <button className="p-2.5 bg-slate-50 rounded-2xl border border-slate-100 relative active:scale-90 transition-all">
             <Bell className="w-5 h-5 text-slate-500" />
